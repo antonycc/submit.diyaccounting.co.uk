@@ -5,22 +5,23 @@
 
 package co.uk.diyaccounting.submit;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.SetEnvironmentVariable;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.AppProps;
 import software.amazon.awscdk.assertions.Template;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 @SetEnvironmentVariable.SetEnvironmentVariables({
     @SetEnvironmentVariable(key = "ENVIRONMENT_NAME", value = "test"),
@@ -72,8 +73,9 @@ class SubmitApplicationCdkResourceTest {
         Template.fromStack(submitApplication.accountStack).resourceCountIs("AWS::Lambda::Function", 13);
 
         infof("Created stack:", submitApplication.billingStack.getStackName());
-        // 4 Lambdas: billingCheckoutPost(1), billingPortalGet(1), billingRecoverPost(1), billingWebhookPost(1)
-        Template.fromStack(submitApplication.billingStack).resourceCountIs("AWS::Lambda::Function", 4);
+        // 3 Lambdas: billingCheckoutPost(1), billingPortalGet(1), billingRecoverPost(1)
+        // billingWebhookPost moved to env-level BillingWebhookStack
+        Template.fromStack(submitApplication.billingStack).resourceCountIs("AWS::Lambda::Function", 3);
 
         infof("Created stack:", submitApplication.apiStack.getStackName());
         Template apiStackTemplate = Template.fromStack(submitApplication.apiStack);
@@ -109,9 +111,7 @@ class SubmitApplicationCdkResourceTest {
         apiStackTemplate.hasResourceProperties("AWS::ApiGatewayV2::Route", Map.of("RouteKey", "DELETE /api/v1/bundle"));
         apiStackTemplate.hasResourceProperties(
                 "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "DELETE /api/v1/bundle/{id}"));
-        // Keep overall counts stable
-        // 40 routes: 36 previous + 4 new (passGeneratePost POST+HEAD, passMyPassesGet GET+HEAD)
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 40);
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 38);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());

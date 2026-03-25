@@ -286,9 +286,6 @@ public class SubmitApplication {
                         .stripeTestSecretKeyArn(stripeTestSecretKeyArn != null ? stripeTestSecretKeyArn : "")
                         .stripePriceId(stripePriceId != null ? stripePriceId : "")
                         .stripeTestPriceId(stripeTestPriceId != null ? stripeTestPriceId : "")
-                        .stripeWebhookSecretArn(stripeWebhookSecretArn != null ? stripeWebhookSecretArn : "")
-                        .stripeTestWebhookSecretArn(
-                                stripeTestWebhookSecretArn != null ? stripeTestWebhookSecretArn : "")
                         .baseUrl(sharedNames.publicBaseUrl)
                         .build());
 
