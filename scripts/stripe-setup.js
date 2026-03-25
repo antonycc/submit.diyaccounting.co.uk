@@ -166,7 +166,7 @@ async function main() {
   console.log(`\n=== Stripe Setup Complete (${mode} mode) ===`);
   console.log("\nProducts & Prices:");
   for (const r of results) {
-    const suffix = r.bundleId === "resident-pro" ? "" : `_${r.bundleId.toUpperCase().replace(/-/g, "_")}`;
+    const suffix = `_${r.bundleId.toUpperCase().replace(/-/g, "_")}`;
     console.log(`  ${r.name} (${r.bundleId}):`);
     console.log(`    Product ID: ${r.productId}`);
     console.log(`    Price ID:   ${r.priceId} (£${(r.priceAmount / 100).toFixed(2)}/${r.interval})`);
