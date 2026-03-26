@@ -523,20 +523,21 @@ test("Click through: Resident-pro pass shows Subscribe button (on-pass-on-subscr
   const statusText = await passStatus.textContent();
   console.log(`[pro-pass-test]: Pass status message: ${statusText}`);
 
-  // For on-pass-on-subscription bundles, the Subscribe button should appear
-  const subscribeBtn = page.locator('button[data-subscribe="true"]:has-text("Subscribe")');
+  // For on-pass-on-subscription bundles, the Subscribe button should appear for resident-pro specifically
+  const subscribeBtn = page.locator('button[data-subscribe="true"][data-bundle-id="resident-pro"]');
   const subscribeBtnVisible = await subscribeBtn
     .first()
     .isVisible({ timeout: 10000 })
     .catch(() => false);
-  console.log(`[pro-pass-test]: Subscribe button visible: ${subscribeBtnVisible}`);
+  console.log(`[pro-pass-test]: Subscribe button visible for resident-pro: ${subscribeBtnVisible}`);
   expect(subscribeBtnVisible).toBe(true);
   await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pro-pass-04-subscribe-button.png` });
 
-  // Verify the Subscribe button has pricing info
+  // Verify the Subscribe button has pricing info and bundle name
   const subscribeBtnText = await subscribeBtn.first().textContent();
   console.log(`[pro-pass-test]: Subscribe button text: ${subscribeBtnText}`);
   expect(subscribeBtnText).toContain("9.99");
+  expect(subscribeBtnText).toContain("Resident Pro");
 
   // Verify NO "Request Resident Pro" button (subscription flow, not direct grant)
   const requestBtn = page.locator('button.service-btn:has-text("Request Resident Pro")');
