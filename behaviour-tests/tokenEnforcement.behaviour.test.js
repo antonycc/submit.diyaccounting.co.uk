@@ -463,7 +463,7 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
   });
 });
 
-test("Token consumption for resident-pro (100 tokens)", async ({ page }, testInfo) => {
+test("Token consumption for resident-vat (100 tokens)", async ({ page }, testInfo) => {
   const testUrl =
     (runTestServer === "run" || runTestServer === "useExisting") && runProxy !== "run" && runProxy !== "useExisting"
       ? `http://127.0.0.1:${httpServerPort}/`
@@ -498,7 +498,7 @@ test("Token consumption for resident-pro (100 tokens)", async ({ page }, testInf
   // ============================================================
   await test.step("Login", async () => {
     console.log("\n" + "=".repeat(60));
-    console.log("RESIDENT-PRO STEP 1: Login");
+    console.log("RESIDENT-VAT STEP 1: Login");
     console.log("=".repeat(60));
 
     await goToHomePageExpectNotLoggedIn(page, testUrl, screenshotPath);
@@ -509,16 +509,16 @@ test("Token consumption for resident-pro (100 tokens)", async ({ page }, testInf
   });
 
   // ============================================================
-  // STEP 2: Clear bundles and grant resident-pro via pass
+  // STEP 2: Clear bundles and grant resident-vat via pass
   // ============================================================
-  await test.step("Grant resident-pro bundle via pass (100 tokens)", async () => {
+  await test.step("Grant resident-vat bundle via pass (100 tokens)", async () => {
     console.log("\n" + "=".repeat(60));
-    console.log("RESIDENT-PRO STEP 2: Grant resident-pro");
+    console.log("RESIDENT-VAT STEP 2: Grant resident-vat");
     console.log("=".repeat(60));
 
     await goToBundlesPage(page, screenshotPath);
     await clearBundles(page, screenshotPath);
-    await ensureBundleViaPassApi(page, "resident-pro", screenshotPath, { testPass: true });
+    await ensureBundleViaPassApi(page, "resident-vat", screenshotPath, { testPass: true });
   });
 
   // ============================================================
@@ -526,11 +526,11 @@ test("Token consumption for resident-pro (100 tokens)", async ({ page }, testInf
   // ============================================================
   await test.step("Verify initial token count is 100", async () => {
     console.log("\n" + "=".repeat(60));
-    console.log("RESIDENT-PRO STEP 3: Verify initial tokens = 100");
+    console.log("RESIDENT-VAT STEP 3: Verify initial tokens = 100");
     console.log("=".repeat(60));
 
-    const initialTokens = await getTokensRemaining(page, "resident-pro");
-    console.log(`Resident-pro initial tokens remaining: ${initialTokens}`);
+    const initialTokens = await getTokensRemaining(page, "resident-vat");
+    console.log(`Resident-vat initial tokens remaining: ${initialTokens}`);
     expect(initialTokens).toBe(100);
 
     userSub = await extractUserSub(page);
@@ -541,9 +541,9 @@ test("Token consumption for resident-pro (100 tokens)", async ({ page }, testInf
   // ============================================================
   // STEP 4: Submit VAT return (consumes 1 token → 99 remaining)
   // ============================================================
-  await test.step("Submit VAT return (consumes 1 token from resident-pro)", async () => {
+  await test.step("Submit VAT return (consumes 1 token from resident-vat)", async () => {
     console.log("\n" + "=".repeat(60));
-    console.log("RESIDENT-PRO STEP 4: Submit VAT return");
+    console.log("RESIDENT-VAT STEP 4: Submit VAT return");
     console.log("=".repeat(60));
 
     await goToHomePageUsingMainNav(page, screenshotPath);
@@ -586,7 +586,7 @@ test("Token consumption for resident-pro (100 tokens)", async ({ page }, testInf
       .isVisible()
       .catch(() => false);
     expect(receiptVisible).toBeTruthy();
-    console.log("VAT return submitted successfully with resident-pro");
+    console.log("VAT return submitted successfully with resident-vat");
 
     await page.screenshot({ path: `${screenshotPath}/pro-04-vat-submitted.png` });
   });
@@ -596,35 +596,35 @@ test("Token consumption for resident-pro (100 tokens)", async ({ page }, testInf
   // ============================================================
   await test.step("Verify token consumed - 99 remaining", async () => {
     console.log("\n" + "=".repeat(60));
-    console.log("RESIDENT-PRO STEP 5: Verify tokens = 99");
+    console.log("RESIDENT-VAT STEP 5: Verify tokens = 99");
     console.log("=".repeat(60));
 
     await goToHomePageUsingMainNav(page, screenshotPath);
     await goToBundlesPage(page, screenshotPath);
 
-    const tokensAfterSubmission = await getTokensRemaining(page, "resident-pro");
-    console.log(`Resident-pro tokens remaining after submission: ${tokensAfterSubmission}`);
+    const tokensAfterSubmission = await getTokensRemaining(page, "resident-vat");
+    console.log(`Resident-vat tokens remaining after submission: ${tokensAfterSubmission}`);
     expect(tokensAfterSubmission).toBe(99);
 
     await page.screenshot({ path: `${screenshotPath}/pro-05-tokens-after-submission.png` });
   });
 
   // ============================================================
-  // STEP 6: Verify usage page shows resident-pro consumption
+  // STEP 6: Verify usage page shows resident-vat consumption
   // ============================================================
-  await test.step("Verify usage page shows resident-pro consumption entry", async () => {
+  await test.step("Verify usage page shows resident-vat consumption entry", async () => {
     console.log("\n" + "=".repeat(60));
-    console.log("[token-enforcement-test]: RESIDENT-PRO STEP 6: Verify usage page");
+    console.log("[token-enforcement-test]: RESIDENT-VAT STEP 6: Verify usage page");
     console.log("=".repeat(60));
 
     await goToUsagePage(page, screenshotPath);
 
-    // Verify Token Sources table: resident-pro should show 100 granted, 99 remaining
+    // Verify Token Sources table: resident-vat should show 100 granted, 99 remaining
     await verifyTokenSources(
       page,
       [
         {
-          bundleId: "resident-pro",
+          bundleId: "resident-vat",
           tokensGranted: 100,
           tokensRemainingAtLeast: 98,
           tokensRemainingAtMost: 100,
@@ -646,8 +646,8 @@ test("Token consumption for resident-pro (100 tokens)", async ({ page }, testInf
       screenshotPath,
     );
 
-    await page.screenshot({ path: `${screenshotPath}/pro-06-usage-page-resident-pro.png`, fullPage: true });
-    console.log("[token-enforcement-test]: Usage page verification complete for resident-pro.");
+    await page.screenshot({ path: `${screenshotPath}/vat-06-usage-page-resident-vat.png`, fullPage: true });
+    console.log("[token-enforcement-test]: Usage page verification complete for resident-vat.");
   });
 
   // ============================================================

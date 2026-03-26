@@ -340,44 +340,45 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     console.log(`Day-guest tokens on bundles page: ${dayGuestTokens}`);
     expect(dayGuestTokens).toBe(0);
 
-    // Verify resident-pro is visible in catalogue
-    const residentProVisible = await page
-      .locator('button[data-bundle-id="resident-pro"], .service-item:has-text("Resident Pro")')
+    // Verify resident-vat is visible in catalogue
+    const residentVatVisible = await page
+      .locator('button[data-bundle-id="resident-vat"], .service-item:has-text("Resident VAT")')
       .first()
       .isVisible({ timeout: 5000 })
       .catch(() => false);
-    console.log(`Resident Pro visible in catalogue: ${residentProVisible}`);
-    expect(residentProVisible).toBe(true);
+    console.log(`Resident VAT visible in catalogue: ${residentVatVisible}`);
+    expect(residentVatVisible).toBe(true);
   });
 
   // ============================================================
-  // STEP 6: Get resident-pro via pass + checkout (100 tokens)
+  // STEP 6: Subscribe to resident-vat via direct checkout (100 tokens)
+  // resident-vat is publicly visible (enable=always, allocation=on-subscription) — no pass needed.
   // Simulator: checkout auto-completes (fakes Stripe like OAuth)
   // Proxy/CI/Prod: real Stripe test checkout with test card
   // ============================================================
-  await test.step("Get resident-pro bundle via pass + checkout (100 tokens)", async () => {
+  await test.step("Subscribe to resident-vat via direct checkout (100 tokens)", async () => {
     console.log("\n" + "=".repeat(60));
-    console.log("STEP 6: Get resident-pro via pass + checkout");
+    console.log("STEP 6: Subscribe to resident-vat via direct checkout");
     console.log("=".repeat(60));
 
     await goToBundlesPage(page, screenshotPath);
-    const checkoutResult = await ensureBundleViaCheckout(page, "resident-pro", screenshotPath, { testPass: true });
+    const checkoutResult = await ensureBundleViaCheckout(page, "resident-vat", screenshotPath, { skipPass: true });
 
     // If real Stripe checkout was used, wait for the webhook to activate the bundle.
     // This is the key verification that would catch webhook signature failures.
     if (checkoutResult?.isStripeCheckout) {
       console.log("Real Stripe checkout detected — waiting for webhook to activate bundle...");
-      await waitForBundleWebhookActivation(page, "resident-pro", screenshotPath, { timeoutMs: 45_000 });
+      await waitForBundleWebhookActivation(page, "resident-vat", screenshotPath, { timeoutMs: 45_000 });
       console.log("Webhook activation confirmed — bundle has stripeSubscriptionId");
     } else {
       console.log("Simulator checkout — skipping webhook activation wait");
     }
 
-    const tokens = await getTokensRemaining(page, "resident-pro");
-    console.log(`Resident-pro tokens remaining: ${tokens}`);
+    const tokens = await getTokensRemaining(page, "resident-vat");
+    console.log(`Resident-vat tokens remaining: ${tokens}`);
     expect(tokens).toBe(100);
 
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-resident-pro-granted.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-resident-vat-granted.png` });
   });
 
   // ============================================================
@@ -391,7 +392,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     console.log("=".repeat(60));
 
     await goToBundlesPage(page, screenshotPath);
-    const result = await verifySubscriptionManagement(page, "resident-pro", screenshotPath);
+    const result = await verifySubscriptionManagement(page, "resident-vat", screenshotPath);
     console.log(`Subscription management verified: button visible, portal URL obtained`);
     expect(result.manageButtonVisible).toBe(true);
     expect(result.portalUrl).toBeTruthy();
@@ -402,7 +403,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
   // ============================================================
   // STEP 7: Use a token for a VAT submission
   // ============================================================
-  await test.step("Submit VAT return (consumes 1 token from resident-pro)", async () => {
+  await test.step("Submit VAT return (consumes 1 token from resident-vat)", async () => {
     console.log("\n" + "=".repeat(60));
     console.log("STEP 7: Submit VAT return");
     console.log("=".repeat(60));
@@ -471,8 +472,8 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     await goToHomePageUsingMainNav(page, screenshotPath);
     await goToBundlesPage(page, screenshotPath);
 
-    const tokensAfterSubmission = await getTokensRemaining(page, "resident-pro");
-    console.log(`Resident-pro tokens remaining after submission: ${tokensAfterSubmission}`);
+    const tokensAfterSubmission = await getTokensRemaining(page, "resident-vat");
+    console.log(`Resident-vat tokens remaining after submission: ${tokensAfterSubmission}`);
     expect(tokensAfterSubmission).toBe(99);
 
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-tokens-after-submission.png` });
@@ -488,13 +489,13 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
 
     await goToUsagePage(page, screenshotPath);
 
-    // Verify Token Sources table: resident-pro bundle should be present with 100 granted, 99 remaining
+    // Verify Token Sources table: resident-vat bundle should be present with 100 granted, 99 remaining
     // (day-guest may or may not appear depending on whether exhausted bundles are shown)
     await verifyTokenSources(
       page,
       [
         {
-          bundleId: "resident-pro",
+          bundleId: "resident-vat",
           tokensGranted: 100,
           tokensRemainingAtLeast: 98,
           tokensRemainingAtMost: 100,
@@ -504,7 +505,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     );
 
     // Verify Token Consumption table: at least 1 submit-vat entry from the VAT submission in Step 7
-    // The resident-pro bundle should have at least 1 consumption event
+    // The resident-vat bundle should have at least 1 consumption event
     await verifyTokenConsumption(
       page,
       [
@@ -535,7 +536,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
 
     await goToBundlesPage(page, screenshotPath);
 
-    const portalResult = await navigateToStripePortal(page, "resident-pro", screenshotPath);
+    const portalResult = await navigateToStripePortal(page, "resident-vat", screenshotPath);
 
     if (portalResult.isSimulator) {
       console.log("Simulator detected — skipping portal cancellation");
@@ -552,7 +553,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
       expect(currentUrl).toContain("bundles.html");
 
       // Wait for cancellation webhook (soft fail — don't break the test if webhook is slow)
-      const webhookResult = await waitForCancellationWebhook(page, "resident-pro", screenshotPath, { timeoutMs: 30_000 });
+      const webhookResult = await waitForCancellationWebhook(page, "resident-vat", screenshotPath, { timeoutMs: 30_000 });
       if (webhookResult.timedOut) {
         console.warn("WARNING: Cancellation webhook did not fire within 30s — subscription may still show as active");
       } else {
@@ -584,7 +585,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     }
 
     await goToBundlesPage(page, screenshotPath);
-    const deletionResult = await verifySubscriptionDeletionWebhook(page, "resident-pro", screenshotPath, { timeoutMs: 45_000 });
+    const deletionResult = await verifySubscriptionDeletionWebhook(page, "resident-vat", screenshotPath, { timeoutMs: 45_000 });
 
     if (deletionResult.skipped) {
       console.log("Subscription already gone — skipping deletion webhook verification");
@@ -620,7 +621,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     name: testInfo.title,
     title: "Payment Funnel (App UI)",
     description:
-      "Exercises the full conversion funnel (The Human Test Journey): day-guest pass → token exhaustion → upgrade to resident-pro via checkout → VAT submission → token usage verification.",
+      "Exercises the full conversion funnel (The Human Test Journey): day-guest pass → token exhaustion → upgrade to resident-vat via checkout → VAT submission → token usage verification.",
     hmrcApi: isSandboxMode() ? "sandbox" : "live",
     env: {
       envName,
@@ -640,7 +641,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
       userSub,
       observedTraceparent,
       testUrl,
-      bundlesTested: ["day-guest", "resident-pro"],
+      bundlesTested: ["day-guest", "resident-vat"],
     },
     artefactsDir: outputDir,
     screenshotPath,

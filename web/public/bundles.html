@@ -413,7 +413,32 @@
           </div>`;
         }
 
-        // on-subscription: disabled with reason on button
+        // on-subscription allocation with always-visible: show Subscribe or Manage button
+        if (allocation === "on-subscription" && enable === "always") {
+          const isLoggedIn = !!getIdToken();
+          if (!isLoggedIn) {
+            return `
+            <div class="service-item" style="text-align:left">
+              <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}"${tgAttr} disabled>Log in to subscribe \u2014 ${rawName}</button>
+              <p style="font-size:0.85em; color:#0c5460; margin:0.5em 0 0;">${b.description || "Log in to subscribe to this bundle"}</p>
+            </div>`;
+          }
+          const existingSub = __fullBundleData.find((fb) => fb.bundleId === b.id && fb.allocated && fb.stripeSubscriptionId);
+          if (existingSub) {
+            return `
+            <div class="service-item" style="text-align:left">
+              <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}" data-manage-subscription="true" style="background-color: #17a2b8;">Manage Subscription \u2014 ${rawName}</button>
+              <p style="font-size:0.85em; color:#155724; margin:0.5em 0 0;">Active subscription</p>
+            </div>`;
+          }
+          return `
+          <div class="service-item" style="text-align:left">
+            <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}" data-subscribe="true" style="background-color: #6f42c1;">Subscribe \u2014 ${rawName}</button>
+            <p style="font-size:0.85em; color:#383d41; margin:0.5em 0 0;">${b.description || "Monthly subscription via Stripe"}</p>
+          </div>`;
+        }
+
+        // on-subscription: disabled with reason on button (fallback for non-always enable)
         if (enable === "on-subscription") {
           return `
           <div class="service-item" style="text-align:left">

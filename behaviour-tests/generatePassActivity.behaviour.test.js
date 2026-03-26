@@ -169,14 +169,14 @@ test("Click through: Generate digital pass and verify in My Generated Passes", a
   /*  BUNDLES  */
   /* ********* */
 
-  // Ensure the user has resident-pro bundle (required for generate-pass activity entitlement)
-  // Generate-pass activities require resident-pro-comp or resident-pro per catalogue
+  // Ensure the user has resident-vat bundle (required for generate-pass activity entitlement)
+  // Generate-pass activities require resident-vat, resident-pro-comp, or resident-pro per catalogue
   await goToBundlesPage(page, screenshotPath);
-  await ensureBundleViaPassApi(page, "resident-pro", screenshotPath, { testPass: true });
+  await ensureBundleViaPassApi(page, "resident-vat", screenshotPath, { testPass: true });
 
   // --- Step 1: Check initial token balance ---
   const initialTokens = await getTokenBalance(page);
-  console.log(`[generate-pass-test]: Initial token balance: ${initialTokens} (expected: 100 for resident-pro)`);
+  console.log(`[generate-pass-test]: Initial token balance: ${initialTokens} (expected: 100 for resident-vat)`);
   await page.screenshot({ path: `${screenshotPath}/${timestamp()}-digital-01-initial-tokens.png` });
 
   /* ************************ */
@@ -321,9 +321,9 @@ test("Click through: Generate physical pass and verify design downloads", async 
   /*  BUNDLES  */
   /* ********* */
 
-  // Ensure the user has resident-pro bundle (required for generate-pass activity entitlement)
+  // Ensure the user has resident-vat bundle (required for generate-pass activity entitlement)
   await goToBundlesPage(page, screenshotPath);
-  await ensureBundleViaPassApi(page, "resident-pro", screenshotPath, { testPass: true });
+  await ensureBundleViaPassApi(page, "resident-vat", screenshotPath, { testPass: true });
 
   /* ************************* */
   /*  GENERATE PHYSICAL PASS   */

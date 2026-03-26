@@ -31,16 +31,17 @@ export function apiEndpoint(app) {
 /* v8 ignore stop */
 
 /**
- * Resolve the Stripe price ID based on sandbox mode.
- * Same pattern as HMRC sandbox/live selection via hmrcAccount.
+ * Resolve the Stripe price ID based on bundleId and sandbox mode.
+ * Env var pattern: STRIPE_[TEST_]PRICE_ID_RESIDENT_PRO, STRIPE_[TEST_]PRICE_ID_RESIDENT_VAT, etc.
  */
-function resolveStripePriceId(isSandbox) {
-  if (isSandbox) {
-    const testPrice = process.env.STRIPE_TEST_PRICE_ID;
-    if (testPrice) return testPrice;
-    logger.warn({ message: "Sandbox mode requested but no STRIPE_TEST_PRICE_ID configured, falling back to STRIPE_PRICE_ID" });
-  }
-  return process.env.STRIPE_PRICE_ID;
+function resolveStripePriceId(bundleId, isSandbox) {
+  const suffix = `_${bundleId.toUpperCase().replace(/-/g, "_")}`;
+  const prefix = isSandbox ? "STRIPE_TEST_PRICE_ID" : "STRIPE_PRICE_ID";
+  const envVar = `${prefix}${suffix}`;
+  const price = process.env[envVar];
+  if (price) return price;
+  logger.warn({ message: `No ${envVar} configured`, bundleId, isSandbox });
+  return undefined;
 }
 
 export async function ingestHandler(event) {
@@ -90,10 +91,11 @@ export async function ingestHandler(event) {
     logger.info({ message: "Sandbox mode resolved", isSandbox, sandboxSource });
 
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || "https://submit.diyaccounting.co.uk/";
-    const priceId = resolveStripePriceId(isSandbox);
+    const bundleId = body.bundleId || "resident-pro";
+    const priceId = resolveStripePriceId(bundleId, isSandbox);
 
     if (!priceId) {
-      logger.error({ message: "No Stripe price ID configured" });
+      logger.error({ message: "No Stripe price ID configured", bundleId, isSandbox });
       return http500ServerErrorResponse({
         request,
         headers: responseHeaders,
@@ -103,9 +105,7 @@ export async function ingestHandler(event) {
 
     const stripe = await getStripeClient({ test: isSandbox });
 
-    logger.info({ message: "Creating checkout session", isSandbox, priceId: priceId.substring(0, 20) + "..." });
-
-    const bundleId = body.bundleId || "resident-pro";
+    logger.info({ message: "Creating checkout session", isSandbox, bundleId, priceId: priceId.substring(0, 20) + "..." });
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",

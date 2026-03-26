@@ -19,47 +19,65 @@ if (!STRIPE_SECRET_KEY) {
 
 const stripe = new Stripe(STRIPE_SECRET_KEY);
 
-async function findOrCreateProduct() {
-  // Search for existing product by metadata
+const PRODUCTS = [
+  {
+    bundleId: "resident-pro",
+    name: "Resident Pro",
+    description: "Monthly subscription for DIY Accounting Submit - unlimited VAT returns and pass generation",
+    priceAmount: 999, // £9.99
+    currency: "gbp",
+    interval: "month",
+  },
+  {
+    bundleId: "resident-vat",
+    name: "Resident VAT",
+    description: "Monthly subscription for DIY Accounting Submit - VAT returns",
+    priceAmount: 99, // £0.99
+    currency: "gbp",
+    interval: "month",
+  },
+];
+
+async function findOrCreateProduct(bundleId, name, description) {
   const products = await stripe.products.search({
-    query: 'metadata["bundleId"]:"resident-pro"',
+    query: `metadata["bundleId"]:"${bundleId}"`,
   });
 
   if (products.data.length > 0) {
-    console.log("Product already exists:", products.data[0].id);
+    console.log(`Product already exists for ${bundleId}:`, products.data[0].id);
     return products.data[0];
   }
 
   const product = await stripe.products.create({
-    name: "Resident Pro",
-    description: "Monthly subscription for DIY Accounting Submit - unlimited VAT returns",
-    metadata: { bundleId: "resident-pro" },
+    name,
+    description,
+    metadata: { bundleId },
   });
-  console.log("Created product:", product.id);
+  console.log(`Created product for ${bundleId}:`, product.id);
   return product;
 }
 
-async function findOrCreatePrice(productId) {
+async function findOrCreatePrice(productId, bundleId, unitAmount, currency, interval) {
   const prices = await stripe.prices.list({
     product: productId,
     active: true,
     type: "recurring",
   });
 
-  const existing = prices.data.find((p) => p.unit_amount === 999 && p.currency === "gbp" && p.recurring?.interval === "month");
+  const existing = prices.data.find((p) => p.unit_amount === unitAmount && p.currency === currency && p.recurring?.interval === interval);
   if (existing) {
-    console.log("Price already exists:", existing.id);
+    console.log(`Price already exists for ${bundleId}:`, existing.id);
     return existing;
   }
 
   const price = await stripe.prices.create({
     product: productId,
-    unit_amount: 999,
-    currency: "gbp",
-    recurring: { interval: "month" },
-    metadata: { bundleId: "resident-pro" },
+    unit_amount: unitAmount,
+    currency,
+    recurring: { interval },
+    metadata: { bundleId },
   });
-  console.log("Created price:", price.id);
+  console.log(`Created price for ${bundleId}:`, price.id);
   return price;
 }
 
@@ -116,8 +134,13 @@ async function findOrCreateWebhook(url, description) {
 async function main() {
   console.log("Setting up Stripe resources...\n");
 
-  const product = await findOrCreateProduct();
-  const price = await findOrCreatePrice(product.id);
+  // Create products and prices for each bundle
+  const results = [];
+  for (const p of PRODUCTS) {
+    const product = await findOrCreateProduct(p.bundleId, p.name, p.description);
+    const price = await findOrCreatePrice(product.id, p.bundleId, p.priceAmount, p.currency, p.interval);
+    results.push({ ...p, productId: product.id, priceId: price.id });
+  }
 
   // Proxy webhook (ngrok — for local dev with real Stripe)
   const proxyWebhook = await findOrCreateWebhook(
@@ -139,9 +162,16 @@ async function main() {
 
   const mode = STRIPE_SECRET_KEY.startsWith("sk_live_") ? "LIVE" : "TEST";
   const secretEnvName = mode === "TEST" ? "STRIPE_TEST_WEBHOOK_SECRET" : "STRIPE_WEBHOOK_SECRET";
+  const priceEnvPrefix = mode === "TEST" ? "STRIPE_TEST_PRICE_ID" : "STRIPE_PRICE_ID";
   console.log(`\n=== Stripe Setup Complete (${mode} mode) ===`);
-  console.log("Product ID:", product.id);
-  console.log("Price ID:", price.id);
+  console.log("\nProducts & Prices:");
+  for (const r of results) {
+    const suffix = `_${r.bundleId.toUpperCase().replace(/-/g, "_")}`;
+    console.log(`  ${r.name} (${r.bundleId}):`);
+    console.log(`    Product ID: ${r.productId}`);
+    console.log(`    Price ID:   ${r.priceId} (£${(r.priceAmount / 100).toFixed(2)}/${r.interval})`);
+    console.log(`    Env var:    ${priceEnvPrefix}${suffix}=${r.priceId}`);
+  }
   console.log(`\nProxy Webhook (${mode}):`);
   console.log("  ID:", proxyWebhook.id);
   console.log("  Secret:", proxyWebhook.secret || "(already exists — retrieve from Stripe Dashboard)");
@@ -151,7 +181,7 @@ async function main() {
   console.log(`Prod Webhook (${mode}):`);
   console.log("  ID:", prodWebhook.id);
   console.log("  Secret:", prodWebhook.secret || "(already exists — retrieve from Stripe Dashboard)");
-  console.log(`\nStore these as ${secretEnvName} per environment:`);
+  console.log(`\nStore webhook secrets as ${secretEnvName} per environment:`);
   console.log(`  Proxy: set ${secretEnvName} in .env (gitignored)`);
   console.log(`  CI:    set ${secretEnvName} in GitHub Environment "ci"`);
   console.log(`  Prod:  set ${secretEnvName} in GitHub Environment "prod"`);

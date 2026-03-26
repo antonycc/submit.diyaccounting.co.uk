@@ -78,7 +78,7 @@ public class BillingStack extends Stack {
         }
 
         @Value.Default
-        default String stripePriceId() {
+        default String stripePriceIdResidentPro() {
             return "";
         }
 
@@ -88,12 +88,22 @@ public class BillingStack extends Stack {
         }
 
         @Value.Default
-        default String stripeTestPriceId() {
+        default String stripeTestPriceIdResidentPro() {
             return "";
         }
 
         @Value.Default
         default String baseUrl() {
+            return "";
+        }
+
+        @Value.Default
+        default String stripePriceIdResidentVat() {
+            return "";
+        }
+
+        @Value.Default
+        default String stripeTestPriceIdResidentVat() {
             return "";
         }
 
@@ -147,11 +157,17 @@ public class BillingStack extends Stack {
         if (props.stripeTestSecretKeyArn() != null && !props.stripeTestSecretKeyArn().isBlank()) {
             billingCheckoutPostLambdaEnv.with("STRIPE_TEST_SECRET_KEY_ARN", props.stripeTestSecretKeyArn());
         }
-        if (props.stripePriceId() != null && !props.stripePriceId().isBlank()) {
-            billingCheckoutPostLambdaEnv.with("STRIPE_PRICE_ID", props.stripePriceId());
+        if (props.stripePriceIdResidentPro() != null && !props.stripePriceIdResidentPro().isBlank()) {
+            billingCheckoutPostLambdaEnv.with("STRIPE_PRICE_ID_RESIDENT_PRO", props.stripePriceIdResidentPro());
         }
-        if (props.stripeTestPriceId() != null && !props.stripeTestPriceId().isBlank()) {
-            billingCheckoutPostLambdaEnv.with("STRIPE_TEST_PRICE_ID", props.stripeTestPriceId());
+        if (props.stripeTestPriceIdResidentPro() != null && !props.stripeTestPriceIdResidentPro().isBlank()) {
+            billingCheckoutPostLambdaEnv.with("STRIPE_TEST_PRICE_ID_RESIDENT_PRO", props.stripeTestPriceIdResidentPro());
+        }
+        if (props.stripePriceIdResidentVat() != null && !props.stripePriceIdResidentVat().isBlank()) {
+            billingCheckoutPostLambdaEnv.with("STRIPE_PRICE_ID_RESIDENT_VAT", props.stripePriceIdResidentVat());
+        }
+        if (props.stripeTestPriceIdResidentVat() != null && !props.stripeTestPriceIdResidentVat().isBlank()) {
+            billingCheckoutPostLambdaEnv.with("STRIPE_TEST_PRICE_ID_RESIDENT_VAT", props.stripeTestPriceIdResidentVat());
         }
         if (props.baseUrl() != null && !props.baseUrl().isBlank()) {
             billingCheckoutPostLambdaEnv.with("DIY_SUBMIT_BASE_URL", props.baseUrl());

@@ -71,8 +71,8 @@ describe("billingCheckoutPost", () => {
       url: "https://checkout.stripe.com/c/pay/cs_test_123",
     });
     process.env.STRIPE_SECRET_KEY = "sk_test_mock";
-    process.env.STRIPE_PRICE_ID = "price_test_123";
-    process.env.STRIPE_TEST_PRICE_ID = "price_test_sandbox_456";
+    process.env.STRIPE_PRICE_ID_RESIDENT_PRO = "price_test_123";
+    process.env.STRIPE_TEST_PRICE_ID_RESIDENT_PRO = "price_test_sandbox_456";
     process.env.DIY_SUBMIT_BASE_URL = "https://test-submit.diyaccounting.co.uk/";
     process.env.USER_SUB_HASH_SALT = '{"current":"v1","versions":{"v1":"test-salt-for-unit-tests"}}';
   });
@@ -122,7 +122,7 @@ describe("billingCheckoutPost", () => {
   });
 
   test("returns 500 when no price ID configured", async () => {
-    delete process.env.STRIPE_PRICE_ID;
+    delete process.env.STRIPE_PRICE_ID_RESIDENT_PRO;
     const event = buildEventWithToken(validToken);
     const result = await ingestHandler(event);
     expect(result.statusCode).toBe(500);
@@ -137,7 +137,7 @@ describe("billingCheckoutPost", () => {
     expect(result.statusCode).toBe(500);
   });
 
-  test("uses STRIPE_TEST_PRICE_ID when sandbox flag is set in request body", async () => {
+  test("uses STRIPE_TEST_PRICE_ID_RESIDENT_PRO when sandbox flag is set in request body", async () => {
     const event = buildEventWithToken(validToken, { sandbox: true });
     await ingestHandler(event);
 
@@ -145,7 +145,7 @@ describe("billingCheckoutPost", () => {
     expect(params.line_items[0].price).toBe("price_test_sandbox_456");
   });
 
-  test("uses STRIPE_PRICE_ID when no sandbox flag", async () => {
+  test("uses STRIPE_PRICE_ID_RESIDENT_PRO when no sandbox flag", async () => {
     const event = buildEventWithToken(validToken, { bundleId: "resident-pro" });
     await ingestHandler(event);
 
@@ -153,12 +153,40 @@ describe("billingCheckoutPost", () => {
     expect(params.line_items[0].price).toBe("price_test_123");
   });
 
-  test("uses STRIPE_TEST_PRICE_ID when user has sandbox bundle qualifier (no explicit flag needed)", async () => {
+  test("uses STRIPE_TEST_PRICE_ID_RESIDENT_PRO when user has sandbox bundle qualifier (no explicit flag needed)", async () => {
     mockGetUserBundles.mockResolvedValue([{ bundleId: "resident-pro", qualifiers: { sandbox: true } }]);
     const event = buildEventWithToken(validToken, { bundleId: "resident-pro" });
     await ingestHandler(event);
 
     const params = mockCheckoutSessionsCreate.mock.calls[0][0];
     expect(params.line_items[0].price).toBe("price_test_sandbox_456");
+  });
+
+  test("uses STRIPE_PRICE_ID_RESIDENT_VAT for resident-vat checkout", async () => {
+    process.env.STRIPE_PRICE_ID_RESIDENT_VAT = "price_vat_live_789";
+    const event = buildEventWithToken(validToken, { bundleId: "resident-vat" });
+    await ingestHandler(event);
+
+    const params = mockCheckoutSessionsCreate.mock.calls[0][0];
+    expect(params.line_items[0].price).toBe("price_vat_live_789");
+    expect(params.metadata.bundleId).toBe("resident-vat");
+  });
+
+  test("uses STRIPE_TEST_PRICE_ID_RESIDENT_VAT for resident-vat sandbox checkout", async () => {
+    process.env.STRIPE_TEST_PRICE_ID_RESIDENT_VAT = "price_vat_test_789";
+    const event = buildEventWithToken(validToken, { bundleId: "resident-vat", sandbox: true });
+    await ingestHandler(event);
+
+    const params = mockCheckoutSessionsCreate.mock.calls[0][0];
+    expect(params.line_items[0].price).toBe("price_vat_test_789");
+    expect(params.metadata.bundleId).toBe("resident-vat");
+  });
+
+  test("returns 500 when resident-vat price ID is not configured", async () => {
+    delete process.env.STRIPE_PRICE_ID_RESIDENT_VAT;
+    delete process.env.STRIPE_TEST_PRICE_ID_RESIDENT_VAT;
+    const event = buildEventWithToken(validToken, { bundleId: "resident-vat" });
+    const result = await ingestHandler(event);
+    expect(result.statusCode).toBe(500);
   });
 });

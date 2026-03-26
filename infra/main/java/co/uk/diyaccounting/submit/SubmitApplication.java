@@ -67,8 +67,10 @@ public class SubmitApplication {
         public String githubTokenSecretArn;
         public String stripeSecretKeyArn;
         public String stripeTestSecretKeyArn;
-        public String stripePriceId;
-        public String stripeTestPriceId;
+        public String stripePriceIdResidentPro;
+        public String stripeTestPriceIdResidentPro;
+        public String stripePriceIdResidentVat;
+        public String stripeTestPriceIdResidentVat;
         public String stripeWebhookSecretArn;
         public String stripeTestWebhookSecretArn;
         public String telegramBotTokenArn;
@@ -168,9 +170,22 @@ public class SubmitApplication {
                 "STRIPE_TEST_SECRET_KEY_ARN",
                 appProps.stripeTestSecretKeyArn,
                 "(from stripeTestSecretKeyArn in cdk.json)");
-        var stripePriceId = envOr("STRIPE_PRICE_ID", appProps.stripePriceId, "(from stripePriceId in cdk.json)");
-        var stripeTestPriceId =
-                envOr("STRIPE_TEST_PRICE_ID", appProps.stripeTestPriceId, "(from stripeTestPriceId in cdk.json)");
+        var stripePriceIdResidentPro = envOr(
+                "STRIPE_PRICE_ID_RESIDENT_PRO",
+                appProps.stripePriceIdResidentPro,
+                "(from stripePriceIdResidentPro in cdk.json)");
+        var stripeTestPriceIdResidentPro = envOr(
+                "STRIPE_TEST_PRICE_ID_RESIDENT_PRO",
+                appProps.stripeTestPriceIdResidentPro,
+                "(from stripeTestPriceIdResidentPro in cdk.json)");
+        var stripePriceIdResidentVat = envOr(
+                "STRIPE_PRICE_ID_RESIDENT_VAT",
+                appProps.stripePriceIdResidentVat,
+                "(from stripePriceIdResidentVat in cdk.json)");
+        var stripeTestPriceIdResidentVat = envOr(
+                "STRIPE_TEST_PRICE_ID_RESIDENT_VAT",
+                appProps.stripeTestPriceIdResidentVat,
+                "(from stripeTestPriceIdResidentVat in cdk.json)");
         var stripeWebhookSecretArn = envOr(
                 "STRIPE_WEBHOOK_SECRET_ARN",
                 appProps.stripeWebhookSecretArn,
@@ -284,8 +299,14 @@ public class SubmitApplication {
                         .baseImageTag(baseImageTag)
                         .stripeSecretKeyArn(stripeSecretKeyArn != null ? stripeSecretKeyArn : "")
                         .stripeTestSecretKeyArn(stripeTestSecretKeyArn != null ? stripeTestSecretKeyArn : "")
-                        .stripePriceId(stripePriceId != null ? stripePriceId : "")
-                        .stripeTestPriceId(stripeTestPriceId != null ? stripeTestPriceId : "")
+                        .stripePriceIdResidentPro(
+                                stripePriceIdResidentPro != null ? stripePriceIdResidentPro : "")
+                        .stripeTestPriceIdResidentPro(
+                                stripeTestPriceIdResidentPro != null ? stripeTestPriceIdResidentPro : "")
+                        .stripePriceIdResidentVat(
+                                stripePriceIdResidentVat != null ? stripePriceIdResidentVat : "")
+                        .stripeTestPriceIdResidentVat(
+                                stripeTestPriceIdResidentVat != null ? stripeTestPriceIdResidentVat : "")
                         .baseUrl(sharedNames.publicBaseUrl)
                         .build());
 
