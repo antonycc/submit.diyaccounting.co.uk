@@ -816,8 +816,30 @@ export async function verifyTokenSources(page, expectedBundles, screenshotPath =
     const sourcesBody = page.locator("#tokenSourcesBody");
     await expect(sourcesBody).toBeVisible({ timeout: 10_000 });
 
-    // Wait for the table to be populated (not showing "Loading..." or "No token bundles found")
-    await expect(sourcesBody.locator("tr")).not.toHaveCount(0, { timeout: 10_000 });
+    // Wait for the table to contain actual bundle data rows (not "Loading..." or "No token bundles found")
+    // A real data row has 4 separate <td> cells; placeholder rows use a single <td colspan="4">
+    const dataRow = sourcesBody.locator("tr").filter({ has: page.locator("td:nth-child(2)") });
+    const maxRetries = 3;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        await expect(dataRow).not.toHaveCount(0, { timeout: 10_000 });
+        break;
+      } catch {
+        if (attempt < maxRetries) {
+          console.log(`Token Sources table not populated (attempt ${attempt}/${maxRetries}), clicking Refresh...`);
+          const refreshBtn = page.locator("#refreshUsageBtn");
+          if (await refreshBtn.isVisible()) {
+            await refreshBtn.click();
+            await page.waitForTimeout(2000);
+          }
+        } else {
+          // Log table content for debugging before failing
+          const bodyHtml = await sourcesBody.innerHTML().catch(() => "(could not read)");
+          console.log(`Token Sources table HTML after ${maxRetries} attempts: ${bodyHtml}`);
+          throw new Error(`Token Sources table did not load bundle data after ${maxRetries} attempts`);
+        }
+      }
+    }
 
     const rows = sourcesBody.locator("tr");
     const rowCount = await rows.count();
