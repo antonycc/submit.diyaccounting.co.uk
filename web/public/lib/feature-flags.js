@@ -35,7 +35,7 @@
 
   /**
    * Check whether a feature flag is enabled.
-   * @param {string} featureId - the feature id (e.g. "waitlist")
+   * @param {string} featureId - the feature id (e.g. "feedback-engagement")
    * @returns {Promise<boolean>}
    */
   async function isFeatureEnabled(featureId) {

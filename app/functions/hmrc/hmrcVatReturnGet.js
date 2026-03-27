@@ -131,6 +131,7 @@ export function extractAndValidateParameters(event, errorMessages) {
 
 // HTTP request/response, aware Lambda ingestHandler function
 // TODO: Remove all but the initial wait and async options.
+// eslint-disable-next-line sonarjs/cognitive-complexity -- async polling + error handling is inherently complex
 export async function ingestHandler(event) {
   await initializeSalt();
   await detectVendorPublicIp();
@@ -172,8 +173,16 @@ export async function ingestHandler(event) {
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
 
   // Extract and validate parameters
-  const { vrn, periodStart, periodEnd, periodKey: directPeriodKey, testScenario, hmrcAccount, runFraudPreventionHeaderValidation, allowSandboxObligations } =
-    extractAndValidateParameters(event, errorMessages);
+  const {
+    vrn,
+    periodStart,
+    periodEnd,
+    periodKey: directPeriodKey,
+    testScenario,
+    hmrcAccount,
+    runFraudPreventionHeaderValidation,
+    allowSandboxObligations,
+  } = extractAndValidateParameters(event, errorMessages);
 
   const responseHeaders = { ...govClientHeaders };
 

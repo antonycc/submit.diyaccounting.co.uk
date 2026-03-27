@@ -412,65 +412,70 @@ export async function ensureBundleViaPassApi(page, bundleId, screenshotPath = de
  * In simulator: checkout auto-completes (mock billing endpoints).
  * In proxy/ci/prod: navigates to real Stripe test checkout and fills in test card.
  */
-export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = defaultScreenshotPath, { testPass = false, skipPass = false } = {}) {
+export async function ensureBundleViaCheckout(
+  page,
+  bundleId,
+  screenshotPath = defaultScreenshotPath,
+  { testPass = false, skipPass = false } = {},
+) {
   return await test.step(`Ensure ${bundleId} bundle via checkout flow`, async () => {
     console.log(`Starting checkout for bundle ${bundleId} (testPass=${testPass}, skipPass=${skipPass})...`);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-01-starting.png` });
 
     if (!skipPass) {
-    // Step 1: Create a pass via admin API
-    const createResult = await page.evaluate(
-      async ({ bid, isTestPass }) => {
+      // Step 1: Create a pass via admin API
+      const createResult = await page.evaluate(
+        async ({ bid, isTestPass }) => {
+          try {
+            const passBody = {
+              passTypeId: bid,
+              bundleId: bid,
+              validityPeriod: "P1D",
+              maxUses: 1,
+              createdBy: "behaviour-test",
+            };
+            if (isTestPass) passBody.testPass = true;
+            const response = await fetch("/api/v1/pass/admin", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(passBody),
+            });
+            const body = await response.json();
+            return { ok: response.ok, code: body?.data?.code || body?.code, body };
+          } catch (err) {
+            return { ok: false, error: err.message };
+          }
+        },
+        { bid: bundleId, isTestPass: testPass },
+      );
+
+      console.log(`Pass creation result: ${JSON.stringify(createResult)}`);
+      if (!createResult.ok || !createResult.code) {
+        throw new Error(`Failed to create pass for ${bundleId}: ${JSON.stringify(createResult)}`);
+      }
+
+      // Step 2: Redeem pass (expects requiresSubscription response)
+      const redeemResult = await page.evaluate(async (code) => {
+        const idToken = localStorage.getItem("cognitoIdToken");
+        if (!idToken) return { ok: false, error: "No auth token" };
         try {
-          const passBody = {
-            passTypeId: bid,
-            bundleId: bid,
-            validityPeriod: "P1D",
-            maxUses: 1,
-            createdBy: "behaviour-test",
-          };
-          if (isTestPass) passBody.testPass = true;
-          const response = await fetch("/api/v1/pass/admin", {
+          const response = await fetch("/api/v1/pass", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(passBody),
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${idToken}`,
+            },
+            body: JSON.stringify({ code }),
           });
-          const body = await response.json();
-          return { ok: response.ok, code: body?.data?.code || body?.code, body };
+          return await response.json();
         } catch (err) {
           return { ok: false, error: err.message };
         }
-      },
-      { bid: bundleId, isTestPass: testPass },
-    );
+      }, createResult.code);
 
-    console.log(`Pass creation result: ${JSON.stringify(createResult)}`);
-    if (!createResult.ok || !createResult.code) {
-      throw new Error(`Failed to create pass for ${bundleId}: ${JSON.stringify(createResult)}`);
-    }
-
-    // Step 2: Redeem pass (expects requiresSubscription response)
-    const redeemResult = await page.evaluate(async (code) => {
-      const idToken = localStorage.getItem("cognitoIdToken");
-      if (!idToken) return { ok: false, error: "No auth token" };
-      try {
-        const response = await fetch("/api/v1/pass", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${idToken}`,
-          },
-          body: JSON.stringify({ code }),
-        });
-        return await response.json();
-      } catch (err) {
-        return { ok: false, error: err.message };
-      }
-    }, createResult.code);
-
-    const data = redeemResult?.data || redeemResult;
-    console.log(`Pass redemption result: ${JSON.stringify(data)}`);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-02-pass-redeemed.png` });
+      const data = redeemResult?.data || redeemResult;
+      console.log(`Pass redemption result: ${JSON.stringify(data)}`);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-02-pass-redeemed.png` });
     } // end if (!skipPass)
 
     // Step 3: Call checkout session API
@@ -638,7 +643,9 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
 
       // Fill postal code / ZIP — this field is REQUIRED by Stripe for most countries.
       // Without it, form validation silently prevents submission (the root cause of CI failures).
-      const postalInput = page.locator('#billingPostalCode, input[name="billingPostalCode"], input[autocomplete="billing postal-code"], input[autocomplete="postal-code"]');
+      const postalInput = page.locator(
+        '#billingPostalCode, input[name="billingPostalCode"], input[autocomplete="billing postal-code"], input[autocomplete="postal-code"]',
+      );
       if (
         await postalInput
           .first()
@@ -809,8 +816,30 @@ export async function verifyTokenSources(page, expectedBundles, screenshotPath =
     const sourcesBody = page.locator("#tokenSourcesBody");
     await expect(sourcesBody).toBeVisible({ timeout: 10_000 });
 
-    // Wait for the table to be populated (not showing "Loading..." or "No token bundles found")
-    await expect(sourcesBody.locator("tr")).not.toHaveCount(0, { timeout: 10_000 });
+    // Wait for the table to contain actual bundle data rows (not "Loading..." or "No token bundles found")
+    // A real data row has 4 separate <td> cells; placeholder rows use a single <td colspan="4">
+    const dataRow = sourcesBody.locator("tr").filter({ has: page.locator("td:nth-child(2)") });
+    const maxRetries = 3;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        await expect(dataRow).not.toHaveCount(0, { timeout: 10_000 });
+        break;
+      } catch {
+        if (attempt < maxRetries) {
+          console.log(`Token Sources table not populated (attempt ${attempt}/${maxRetries}), clicking Refresh...`);
+          const refreshBtn = page.locator("#refreshUsageBtn");
+          if (await refreshBtn.isVisible()) {
+            await refreshBtn.click();
+            await page.waitForTimeout(2000);
+          }
+        } else {
+          // Log table content for debugging before failing
+          const bodyHtml = await sourcesBody.innerHTML().catch(() => "(could not read)");
+          console.log(`Token Sources table HTML after ${maxRetries} attempts: ${bodyHtml}`);
+          throw new Error(`Token Sources table did not load bundle data after ${maxRetries} attempts`);
+        }
+      }
+    }
 
     const rows = sourcesBody.locator("tr");
     const rowCount = await rows.count();
@@ -1082,10 +1111,7 @@ export async function navigateToStripePortal(page, bundleId, screenshotPath = de
 
     // Click and wait for the URL to change away from the current page
     try {
-      await Promise.all([
-        page.waitForURL((url) => url.href !== beforeUrl, { timeout: 15_000 }),
-        manageBtn.click({ force: true }),
-      ]);
+      await Promise.all([page.waitForURL((url) => url.href !== beforeUrl, { timeout: 15_000 }), manageBtn.click({ force: true })]);
     } catch {
       // Navigation didn't happen within 15s — still on bundles.html. This is simulator behavior.
       console.log("Simulator detected: portal button did not navigate away from bundles.html");
@@ -1158,7 +1184,7 @@ export async function cancelSubscriptionViaPortal(page, returnUrl, screenshotPat
     // Verify cancellation succeeded: look for "Cancels" badge or "Don't cancel" button
     const cancellationConfirmed =
       (await page
-        .locator('text=Cancels')
+        .locator("text=Cancels")
         .first()
         .isVisible({ timeout: 5000 })
         .catch(() => false)) ||
@@ -1336,9 +1362,7 @@ export async function verifySubscriptionDeletionWebhook(
         return { deleted: true, subscriptionStatus: result.subscriptionStatus, timedOut: false };
       }
 
-      console.log(
-        `[deletion-webhook]: Poll ${pollCount} - status=${result.subscriptionStatus}, elapsed=${Date.now() - startTime}ms`,
-      );
+      console.log(`[deletion-webhook]: Poll ${pollCount} - status=${result.subscriptionStatus}, elapsed=${Date.now() - startTime}ms`);
       await page.waitForTimeout(pollIntervalMs);
     }
 

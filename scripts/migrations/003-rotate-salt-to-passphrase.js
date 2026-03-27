@@ -22,7 +22,19 @@ async function getDocClient() {
   return { docClient, QueryCommand, PutCommand, DeleteCommand, ScanCommand };
 }
 
-async function rekeyTable(docClient, QueryCommand, PutCommand, DeleteCommand, ScanCommand, tableName, pkName, skName, oldSalt, newSalt, userSubs) {
+async function rekeyTable(
+  docClient,
+  QueryCommand,
+  PutCommand,
+  DeleteCommand,
+  ScanCommand,
+  tableName,
+  pkName,
+  skName,
+  oldSalt,
+  newSalt,
+  userSubs,
+) {
   const crypto = await import("node:crypto");
   let rekeyed = 0;
 
@@ -106,9 +118,7 @@ export async function up({ envName }) {
     try {
       const { SSMClient, GetParameterCommand } = await import("@aws-sdk/client-ssm");
       const ssmClient = new SSMClient({ region: process.env.AWS_REGION || "eu-west-2" });
-      const param = await ssmClient.send(
-        new GetParameterCommand({ Name: `/${envName}/submit/cognito-user-pool-id` }),
-      );
+      const param = await ssmClient.send(new GetParameterCommand({ Name: `/${envName}/submit/cognito-user-pool-id` }));
       userPoolId = param.Parameter.Value;
     } catch {
       console.log("    WARNING: Could not resolve Cognito user pool ID — skipping re-key");
@@ -151,14 +161,31 @@ export async function up({ envName }) {
     ["HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", `${envName}-env-hmrc-api-requests`, "hashedSub", "id"],
     ["HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME", `${envName}-env-hmrc-vat-return-post-async-requests`, "hashedSub", "requestId"],
     ["HMRC_VAT_RETURN_GET_ASYNC_REQUESTS_TABLE_NAME", `${envName}-env-hmrc-vat-return-get-async-requests`, "hashedSub", "requestId"],
-    ["HMRC_VAT_OBLIGATION_GET_ASYNC_REQUESTS_TABLE_NAME", `${envName}-env-hmrc-vat-obligation-get-async-requests`, "hashedSub", "requestId"],
+    [
+      "HMRC_VAT_OBLIGATION_GET_ASYNC_REQUESTS_TABLE_NAME",
+      `${envName}-env-hmrc-vat-obligation-get-async-requests`,
+      "hashedSub",
+      "requestId",
+    ],
   ];
 
   let totalRekeyed = 0;
   for (const [envVar, fallback, pkName, skName] of tables) {
     const tableName = process.env[envVar] || fallback;
     try {
-      const count = await rekeyTable(docClient, QueryCommand, PutCommand, DeleteCommand, ScanCommand, tableName, pkName, skName, oldSalt, newSalt, userSubs);
+      const count = await rekeyTable(
+        docClient,
+        QueryCommand,
+        PutCommand,
+        DeleteCommand,
+        ScanCommand,
+        tableName,
+        pkName,
+        skName,
+        oldSalt,
+        newSalt,
+        userSubs,
+      );
       console.log(`    ${tableName}: ${count} items re-keyed`);
       totalRekeyed += count;
     } catch (error) {

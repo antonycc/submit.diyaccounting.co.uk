@@ -42,12 +42,14 @@ async function queryByHashedSub(docClient, tableName, hashedSub) {
   let lastEvaluatedKey = undefined;
 
   do {
-    const response = await docClient.send(new QueryCommand({
-      TableName: tableName,
-      KeyConditionExpression: "hashedSub = :h",
-      ExpressionAttributeValues: { ":h": hashedSub },
-      ExclusiveStartKey: lastEvaluatedKey,
-    }));
+    const response = await docClient.send(
+      new QueryCommand({
+        TableName: tableName,
+        KeyConditionExpression: "hashedSub = :h",
+        ExpressionAttributeValues: { ":h": hashedSub },
+        ExclusiveStartKey: lastEvaluatedKey,
+      }),
+    );
     items.push(...(response.Items || []));
     lastEvaluatedKey = response.LastEvaluatedKey;
   } while (lastEvaluatedKey);
@@ -61,13 +63,15 @@ async function queryByHashedSub(docClient, tableName, hashedSub) {
 async function deleteItems(docClient, tableName, items, sortKeyAttribute) {
   let deleted = 0;
   for (const item of items) {
-    await docClient.send(new DeleteCommand({
-      TableName: tableName,
-      Key: {
-        hashedSub: item.hashedSub,
-        [sortKeyAttribute]: item[sortKeyAttribute],
-      },
-    }));
+    await docClient.send(
+      new DeleteCommand({
+        TableName: tableName,
+        Key: {
+          hashedSub: item.hashedSub,
+          [sortKeyAttribute]: item[sortKeyAttribute],
+        },
+      }),
+    );
     deleted++;
   }
   return deleted;
@@ -80,33 +84,37 @@ async function deleteItems(docClient, tableName, items, sortKeyAttribute) {
 async function anonymizeReceipts(docClient, tableName, items) {
   let anonymized = 0;
   for (const item of items) {
-    await docClient.send(new UpdateCommand({
-      TableName: tableName,
-      Key: {
-        hashedSub: item.hashedSub,
-        receiptId: item.receiptId,
-      },
-      UpdateExpression: "SET #hs = :deleted, anonymizedAt = :now REMOVE #email, #name, #addr",
-      ExpressionAttributeNames: {
-        "#hs": "originalHashedSub",
-        "#email": "email",
-        "#name": "userName",
-        "#addr": "address",
-      },
-      ExpressionAttributeValues: {
-        ":deleted": "DELETED",
-        ":now": new Date().toISOString(),
-      },
-    }));
+    await docClient.send(
+      new UpdateCommand({
+        TableName: tableName,
+        Key: {
+          hashedSub: item.hashedSub,
+          receiptId: item.receiptId,
+        },
+        UpdateExpression: "SET #hs = :deleted, anonymizedAt = :now REMOVE #email, #name, #addr",
+        ExpressionAttributeNames: {
+          "#hs": "originalHashedSub",
+          "#email": "email",
+          "#name": "userName",
+          "#addr": "address",
+        },
+        ExpressionAttributeValues: {
+          ":deleted": "DELETED",
+          ":now": new Date().toISOString(),
+        },
+      }),
+    );
 
     // Delete and re-create with DELETED partition key to truly decouple from user
-    await docClient.send(new DeleteCommand({
-      TableName: tableName,
-      Key: {
-        hashedSub: item.hashedSub,
-        receiptId: item.receiptId,
-      },
-    }));
+    await docClient.send(
+      new DeleteCommand({
+        TableName: tableName,
+        Key: {
+          hashedSub: item.hashedSub,
+          receiptId: item.receiptId,
+        },
+      }),
+    );
 
     anonymized++;
   }

@@ -126,7 +126,7 @@ export function createSimulatorServer() {
   // Simple passphrase generator for simulator
   const simWords = ["alpha", "beta", "gamma", "delta", "echo", "foxtrot", "golf", "hotel", "india", "juliet", "kilo", "lima"];
   function generateSimPassphrase() {
-    const pick = () => simWords[Math.floor(Math.random() * simWords.length)];
+    const pick = () => simWords[Math.floor(Math.random() * simWords.length)]; // eslint-disable-line sonarjs/pseudo-random -- simulator only, not security-sensitive
     return `${pick()}-${pick()}-${pick()}-${pick()}`;
   }
 

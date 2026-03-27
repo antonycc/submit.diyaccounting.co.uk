@@ -22,8 +22,6 @@ import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.certificatemanager.Certificate;
 import software.amazon.awscdk.services.certificatemanager.ICertificate;
 import software.amazon.awscdk.services.cognito.AccountRecovery;
-import software.amazon.awscdk.services.iam.PolicyStatement;
-import software.amazon.awscdk.services.cognito.UserPoolOperation;
 import software.amazon.awscdk.services.cognito.AttributeMapping;
 import software.amazon.awscdk.services.cognito.AuthFlow;
 import software.amazon.awscdk.services.cognito.CustomThreatProtectionMode;
@@ -44,6 +42,8 @@ import software.amazon.awscdk.services.cognito.UserPoolClient;
 import software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider;
 import software.amazon.awscdk.services.cognito.UserPoolDomain;
 import software.amazon.awscdk.services.cognito.UserPoolIdentityProviderGoogle;
+import software.amazon.awscdk.services.cognito.UserPoolOperation;
+import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Architecture;
 import software.amazon.awscdk.services.lambda.Code;
 import software.amazon.awscdk.services.lambda.Function;
@@ -189,12 +189,13 @@ public class IdentityStack extends Stack {
         // adds a custom claim that the frontend can use to detect MFA completion.
         // Resolve asset path from either project root (Maven test) or cdk-environment/ (cdk synth)
         var preTokenGenRelativePath = "app/functions/auth/preTokenGeneration";
-        var preTokenGenAssetDir = Paths.get(preTokenGenRelativePath).toAbsolutePath().normalize();
+        var preTokenGenAssetDir =
+                Paths.get(preTokenGenRelativePath).toAbsolutePath().normalize();
         if (!preTokenGenAssetDir.toFile().isDirectory()) {
-            preTokenGenAssetDir = Paths.get("../" + preTokenGenRelativePath).toAbsolutePath().normalize();
+            preTokenGenAssetDir =
+                    Paths.get("../" + preTokenGenRelativePath).toAbsolutePath().normalize();
         }
-        var preTokenGenFunction = Function.Builder.create(
-                        this, props.resourceNamePrefix() + "-PreTokenGeneration")
+        var preTokenGenFunction = Function.Builder.create(this, props.resourceNamePrefix() + "-PreTokenGeneration")
                 .functionName(props.resourceNamePrefix() + "-pre-token-generation")
                 .runtime(Runtime.NODEJS_22_X)
                 .architecture(Architecture.ARM_64)
@@ -208,9 +209,9 @@ public class IdentityStack extends Stack {
         // UserPool -> Lambda (trigger) -> IAM Policy (UserPool ARN) -> UserPool
         preTokenGenFunction.addToRolePolicy(PolicyStatement.Builder.create()
                 .actions(List.of("cognito-idp:AdminGetUser"))
-                .resources(List.of(
-                        String.format("arn:aws:cognito-idp:%s:%s:userpool/*",
-                                props.getEnv().getRegion(), props.getEnv().getAccount())))
+                .resources(List.of(String.format(
+                        "arn:aws:cognito-idp:%s:%s:userpool/*",
+                        props.getEnv().getRegion(), props.getEnv().getAccount())))
                 .build());
 
         // Google IdP

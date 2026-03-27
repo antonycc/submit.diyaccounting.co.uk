@@ -26,7 +26,14 @@ import {
   logOutAndExpectToBeLoggedOut,
   verifyLoggedInStatus,
 } from "./steps/behaviour-login-steps.js";
-import { ensureBundlePresent, getTokensRemaining, goToBundlesPage, goToUsagePage, verifyTokenSources, verifyTokenConsumption } from "./steps/behaviour-bundle-steps.js";
+import {
+  ensureBundlePresent,
+  getTokensRemaining,
+  goToBundlesPage,
+  goToUsagePage,
+  verifyTokenSources,
+  verifyTokenConsumption,
+} from "./steps/behaviour-bundle-steps.js";
 import { goToReceiptsPageUsingMainNav, verifyAtLeastOneClickableReceipt } from "./steps/behaviour-hmrc-receipts-steps.js";
 import { exportAllTables } from "./helpers/dynamodb-export.js";
 import {
@@ -462,14 +469,14 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   } else if (viewResult.navigated) {
     // Check if the fulfilled obligation period matches the period we submitted to
     const periodMatches =
-      submitPeriodDates &&
-      viewResult.periodStart === submitPeriodDates.periodStart &&
-      viewResult.periodEnd === submitPeriodDates.periodEnd;
+      submitPeriodDates && viewResult.periodStart === submitPeriodDates.periodStart && viewResult.periodEnd === submitPeriodDates.periodEnd;
     if (periodMatches) {
       console.log(`[Obligation→View] Fulfilled obligation matches submitted period: ${viewResult.periodStart} to ${viewResult.periodEnd}`);
     } else if (submitPeriodDates) {
       // Overwrite form with the submitted period to ensure we view a return that exists
-      console.log(`[Obligation→View] Period mismatch: obligation=${viewResult.periodStart}..${viewResult.periodEnd}, submitted=${submitPeriodDates.periodStart}..${submitPeriodDates.periodEnd} — overwriting form`);
+      console.log(
+        `[Obligation→View] Period mismatch: obligation=${viewResult.periodStart}..${viewResult.periodEnd}, submitted=${submitPeriodDates.periodStart}..${submitPeriodDates.periodEnd} — overwriting form`,
+      );
       await fillInViewVatReturn(page, testVatNumber, submitPeriodDates, null, runFraudPreventionHeaderValidation, screenshotPath);
     } else {
       console.log(`[Obligation→View] Using obligation period: ${viewResult.periodStart} to ${viewResult.periodEnd}`);
@@ -545,7 +552,8 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
     testId: "submitVatBehaviour",
     name: testInfo.title,
     title: "Submit VAT Return (HMRC: VAT Return POST)",
-    description: "Obligations-first flow: queries obligations (triggers read:vat auth), clicks open obligation to submit VAT (triggers scope upgrade to write:vat read:vat), verifies receipts, queries obligations again (token reuse, no re-auth), clicks fulfilled obligation to view return, checks token usage.",
+    description:
+      "Obligations-first flow: queries obligations (triggers read:vat auth), clicks open obligation to submit VAT (triggers scope upgrade to write:vat read:vat), verifies receipts, queries obligations again (token reuse, no re-auth), clicks fulfilled obligation to view return, checks token usage.",
     hmrcApis: [
       { url: "/api/v1/hmrc/vat/return", method: "POST" },
       { url: "/api/v1/hmrc/vat/return/:periodKey", method: "GET" },

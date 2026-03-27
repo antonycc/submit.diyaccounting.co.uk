@@ -344,9 +344,10 @@ async function handlePaymentFailed(invoice, { test = false } = {}) {
   });
 }
 
+// eslint-disable-next-line sonarjs/cognitive-complexity -- webhook handler switches on Stripe event types
 export async function ingestHandler(event) {
   await initializeSalt();
-  const { request } = extractRequest(event);
+  extractRequest(event);
   const rawBody = event.body || "";
   const sig = event.headers?.["stripe-signature"] || event.headers?.["Stripe-Signature"] || "";
 
@@ -369,14 +370,16 @@ export async function ingestHandler(event) {
   let stripeEvent;
   try {
     const webhookSecret = await resolveWebhookSecret({ test: isTestMode });
-    const secretSource = isTestMode
-      ? (process.env.STRIPE_TEST_WEBHOOK_SECRET && !process.env.STRIPE_TEST_WEBHOOK_SECRET.startsWith("arn:") ? "env" : "secretsmanager")
-      : (process.env.STRIPE_WEBHOOK_SECRET && !process.env.STRIPE_WEBHOOK_SECRET.startsWith("arn:") ? "env" : "secretsmanager");
+    const envKey = isTestMode ? "STRIPE_TEST_WEBHOOK_SECRET" : "STRIPE_WEBHOOK_SECRET";
+    const secretSource = process.env[envKey] && !process.env[envKey].startsWith("arn:") ? "env" : "secretsmanager";
     logger.info({ message: "Webhook signature verification attempt", isTestMode, secretSource, hasSignature: !!sig });
     const stripe = await getStripeClient();
     stripeEvent = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
   } catch (error) {
-    logger.error({ message: "Webhook signature verification failed", error: error.message, isTestMode,
+    logger.error({
+      message: "Webhook signature verification failed",
+      error: error.message,
+      isTestMode,
       hasTestSecretArn: !!process.env.STRIPE_TEST_WEBHOOK_SECRET_ARN,
       hasLiveSecretArn: !!process.env.STRIPE_WEBHOOK_SECRET_ARN,
     });
@@ -429,7 +432,10 @@ export async function ingestHandler(event) {
           const charge = typeof dispute.charge === "string" ? await stripeClient.charges.retrieve(dispute.charge) : dispute.charge;
           disputeCustomerEmail = charge.billing_details?.email || charge.receipt_email || "";
           if (charge.payment_intent) {
-            const pi = typeof charge.payment_intent === "string" ? await stripeClient.paymentIntents.retrieve(charge.payment_intent) : charge.payment_intent;
+            const pi =
+              typeof charge.payment_intent === "string"
+                ? await stripeClient.paymentIntents.retrieve(charge.payment_intent)
+                : charge.payment_intent;
             if (pi.invoice) {
               const inv = typeof pi.invoice === "string" ? await stripeClient.invoices.retrieve(pi.invoice) : pi.invoice;
               disputeSubscriptionId = inv.subscription || null;
@@ -450,7 +456,11 @@ export async function ingestHandler(event) {
             await updateBundleSubscriptionFields(disputeSubRecord.hashedSub, disputeSubRecord.bundleId, {
               disputed: true,
             });
-            logger.info({ message: "Dispute flagged on subscription and bundle", disputeId: dispute.id, subscriptionId: disputeSubscriptionId });
+            logger.info({
+              message: "Dispute flagged on subscription and bundle",
+              disputeId: dispute.id,
+              subscriptionId: disputeSubscriptionId,
+            });
           } else {
             logger.warn({ message: "No subscription record found for dispute flagging", subscriptionId: disputeSubscriptionId });
           }
@@ -472,7 +482,15 @@ export async function ingestHandler(event) {
         await publishActivityEvent({
           event: "dispute-created",
           site: "submit",
-          summary: `Dispute auto-accepted: ${dispute.id} (charge: ${dispute.charge})${disputeSubscriptionId ? ` sub: ${disputeSubscriptionId}` : ""}${disputeCustomerEmail ? ` email: ${maskEmail(disputeCustomerEmail)}` : ""}`,
+          summary: [
+            "Dispute auto-accepted:",
+            dispute.id,
+            `(charge: ${dispute.charge})`,
+            disputeSubscriptionId ? `sub: ${disputeSubscriptionId}` : "",
+            disputeCustomerEmail ? `email: ${maskEmail(disputeCustomerEmail)}` : "",
+          ]
+            .filter(Boolean)
+            .join(" "),
           actor: test ? "test-user" : "customer",
           flow: "user-journey",
           detail: { disputeId: dispute.id, chargeId: dispute.charge, subscriptionId: disputeSubscriptionId },

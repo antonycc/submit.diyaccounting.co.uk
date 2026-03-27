@@ -92,13 +92,14 @@
           </div>
         </div>
 
-        <div id="waitlistSection" style="display: none; margin-top: 3em; padding-top: 2em; border-top: 1px solid #ddd">
-          <h3>Register for Early Access</h3>
+        <div id="feedbackEngagementSection" style="display: none; margin-top: 3em; padding-top: 2em; border-top: 1px solid #ddd">
+          <h3>Share Your Feedback</h3>
           <p style="color: #666; font-size: 0.9em">
-            We're getting ready to launch. Register for early access and we'll send you an invitation.
+            We're actively improving this service and would love to hear from you. If you're willing to share feedback, let us know and
+            we'll be in touch.
           </p>
           <div style="margin: 1em auto; text-align: center">
-            <button type="button" id="waitlistJoinBtn" class="btn" style="min-width: 180px">Register for Early Access</button>
+            <button type="button" id="feedbackEngagementBtn" class="btn" style="min-width: 180px">I'm willing to share feedback</button>
           </div>
         </div>
 
@@ -115,7 +116,14 @@
             You haven't generated any passes yet. Generate one from the home page activities.
           </div>
           <div id="generatedPassesLoadMore" style="display: none; margin-top: 1em">
-            <button type="button" id="loadMorePassesBtn" class="btn" style="font-size: 0.85em; padding: 0.4em 1em; min-width: unset; background-color: #6c757d">Load more</button>
+            <button
+              type="button"
+              id="loadMorePassesBtn"
+              class="btn"
+              style="font-size: 0.85em; padding: 0.4em 1em; min-width: unset; background-color: #6c757d"
+            >
+              Load more
+            </button>
           </div>
         </div>
       </div>
@@ -890,7 +898,10 @@
           if (body.requiresSubscription) {
             // Pass is valid but bundle requires subscription — store validation and re-render
             try {
-              sessionStorage.setItem("passValidation", JSON.stringify({ code, bundleId: body.bundleId, valid: true, testPass: body.testPass || false }));
+              sessionStorage.setItem(
+                "passValidation",
+                JSON.stringify({ code, bundleId: body.bundleId, valid: true, testPass: body.testPass || false }),
+              );
             } catch {}
             // If test pass, activate sandbox mode so checkout uses test Stripe
             if (body.testPass) {
@@ -1043,32 +1054,32 @@
         renderCurrentBundles();
       }, 100);
 
-      // Waitlist section logic
-      async function initWaitlistSection() {
-        var section = document.getElementById("waitlistSection");
+      // Feedback engagement section logic
+      async function initFeedbackEngagementSection() {
+        var section = document.getElementById("feedbackEngagementSection");
         if (!section) return;
 
         var isLoggedIn = !!getIdToken();
         var alreadyRegistered = false;
         try {
-          alreadyRegistered = localStorage.getItem("waitlistRegistered") === "true";
+          alreadyRegistered = localStorage.getItem("feedbackEngagementRegistered") === "true";
         } catch {}
 
         if (!isLoggedIn || alreadyRegistered) return;
 
         // Check feature flag
         if (window.featureFlags && typeof window.featureFlags.isFeatureEnabled === "function") {
-          var enabled = await window.featureFlags.isFeatureEnabled("waitlist");
+          var enabled = await window.featureFlags.isFeatureEnabled("feedback-engagement");
           if (!enabled) return;
         }
 
         section.style.display = "block";
 
-        var joinBtn = document.getElementById("waitlistJoinBtn");
+        var joinBtn = document.getElementById("feedbackEngagementBtn");
         if (joinBtn) {
           // If already registered, update button state
           if (alreadyRegistered) {
-            joinBtn.textContent = "You're registered!";
+            joinBtn.textContent = "Thanks! We'll be in touch soon.";
             joinBtn.style.backgroundColor = "#0a8927";
             joinBtn.disabled = true;
             return;
@@ -1076,21 +1087,21 @@
 
           joinBtn.addEventListener("click", async function () {
             joinBtn.disabled = true;
-            joinBtn.textContent = "Registering...";
+            joinBtn.textContent = "Sending...";
             try {
               var response = await window.fetchWithIdToken("/api/v1/interest", { method: "POST" });
               if (response.ok) {
-                joinBtn.textContent = "You're registered!";
+                joinBtn.textContent = "Thanks! We'll be in touch soon.";
                 joinBtn.style.backgroundColor = "#0a8927";
                 try {
-                  localStorage.setItem("waitlistRegistered", "true");
+                  localStorage.setItem("feedbackEngagementRegistered", "true");
                 } catch {}
               } else {
                 joinBtn.textContent = "Try again";
                 joinBtn.disabled = false;
               }
             } catch (err) {
-              console.error("Waitlist registration failed:", err);
+              console.error("Feedback engagement failed:", err);
               joinBtn.textContent = "Try again";
               joinBtn.disabled = false;
             }
@@ -1132,18 +1143,21 @@
 
           emptyMsg.style.display = "none";
 
-          data.passes.forEach(pass => {
+          data.passes.forEach((pass) => {
             const typeLabel = pass.passTypeId === "digital-pass" ? "Digital" : "Physical";
             const expiryLabel = pass.validUntil ? new Date(pass.validUntil).toLocaleDateString() : "No expiry";
             const usageLabel = `${pass.useCount || 0} of ${pass.maxUses} uses`;
             const passUrl = `${window.location.origin}/bundles.html?pass=${encodeURIComponent(pass.code)}`;
             const qrPage = pass.passTypeId === "digital-pass" ? "generate-digital.html" : "generate-physical.html";
             const qrUrl = `${window.location.origin}/passes/${qrPage}?code=${encodeURIComponent(pass.code)}`;
-            const notesHtml = pass.notes ? `<div style="font-size:0.85em; color:#555; margin-top:0.3em; font-style:italic">${escapeHtml(pass.notes)}</div>` : "";
+            const notesHtml = pass.notes
+              ? `<div style="font-size:0.85em; color:#555; margin-top:0.3em; font-style:italic">${escapeHtml(pass.notes)}</div>`
+              : "";
 
             const card = document.createElement("div");
             card.setAttribute("data-pass-code", pass.code);
-            card.style.cssText = "text-align:left; margin-bottom: 1em; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 1em;";
+            card.style.cssText =
+              "text-align:left; margin-bottom: 1em; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 1em;";
             card.innerHTML = `
               <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5em">
                 <span style="font-weight:600; color:#2c5aa0; word-break:break-word">${escapeHtml(pass.code)}</span>
@@ -1181,7 +1195,9 @@
         try {
           await navigator.clipboard.writeText(url);
           btn.textContent = "Copied!";
-          setTimeout(() => { btn.textContent = "Copy Link"; }, 2000);
+          setTimeout(() => {
+            btn.textContent = "Copy Link";
+          }, 2000);
         } catch {}
       });
 
@@ -1198,7 +1214,7 @@
       // Initialize page - wait for submit.js module to be ready
       function initPage() {
         checkAuthStatus();
-        initWaitlistSection();
+        initFeedbackEngagementSection();
         fetchMyGeneratedPasses(false);
 
         // Handle checkout result from Stripe redirect
@@ -1219,8 +1235,12 @@
               if (uid) await window.bundleCache.clearBundles(uid);
             } catch {}
             await fetchUserBundles();
-            try { renderCurrentBundles(); } catch {}
-            try { renderCatalogueBundles(); } catch {}
+            try {
+              renderCurrentBundles();
+            } catch {}
+            try {
+              renderCatalogueBundles();
+            } catch {}
             window.dispatchEvent(new CustomEvent("bundle-changed"));
           };
           // First attempt immediately, then retry after 3s if bundle not yet granted by webhook

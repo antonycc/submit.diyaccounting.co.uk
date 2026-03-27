@@ -154,20 +154,27 @@ public class BillingStack extends Stack {
         if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
             billingCheckoutPostLambdaEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
         }
-        if (props.stripeTestSecretKeyArn() != null && !props.stripeTestSecretKeyArn().isBlank()) {
+        if (props.stripeTestSecretKeyArn() != null
+                && !props.stripeTestSecretKeyArn().isBlank()) {
             billingCheckoutPostLambdaEnv.with("STRIPE_TEST_SECRET_KEY_ARN", props.stripeTestSecretKeyArn());
         }
-        if (props.stripePriceIdResidentPro() != null && !props.stripePriceIdResidentPro().isBlank()) {
+        if (props.stripePriceIdResidentPro() != null
+                && !props.stripePriceIdResidentPro().isBlank()) {
             billingCheckoutPostLambdaEnv.with("STRIPE_PRICE_ID_RESIDENT_PRO", props.stripePriceIdResidentPro());
         }
-        if (props.stripeTestPriceIdResidentPro() != null && !props.stripeTestPriceIdResidentPro().isBlank()) {
-            billingCheckoutPostLambdaEnv.with("STRIPE_TEST_PRICE_ID_RESIDENT_PRO", props.stripeTestPriceIdResidentPro());
+        if (props.stripeTestPriceIdResidentPro() != null
+                && !props.stripeTestPriceIdResidentPro().isBlank()) {
+            billingCheckoutPostLambdaEnv.with(
+                    "STRIPE_TEST_PRICE_ID_RESIDENT_PRO", props.stripeTestPriceIdResidentPro());
         }
-        if (props.stripePriceIdResidentVat() != null && !props.stripePriceIdResidentVat().isBlank()) {
+        if (props.stripePriceIdResidentVat() != null
+                && !props.stripePriceIdResidentVat().isBlank()) {
             billingCheckoutPostLambdaEnv.with("STRIPE_PRICE_ID_RESIDENT_VAT", props.stripePriceIdResidentVat());
         }
-        if (props.stripeTestPriceIdResidentVat() != null && !props.stripeTestPriceIdResidentVat().isBlank()) {
-            billingCheckoutPostLambdaEnv.with("STRIPE_TEST_PRICE_ID_RESIDENT_VAT", props.stripeTestPriceIdResidentVat());
+        if (props.stripeTestPriceIdResidentVat() != null
+                && !props.stripeTestPriceIdResidentVat().isBlank()) {
+            billingCheckoutPostLambdaEnv.with(
+                    "STRIPE_TEST_PRICE_ID_RESIDENT_VAT", props.stripeTestPriceIdResidentVat());
         }
         if (props.baseUrl() != null && !props.baseUrl().isBlank()) {
             billingCheckoutPostLambdaEnv.with("DIY_SUBMIT_BASE_URL", props.baseUrl());
@@ -217,7 +224,8 @@ public class BillingStack extends Stack {
                     "Granted Secrets Manager access to %s for Stripe secret %s",
                     this.billingCheckoutPostLambda.getFunctionName(), props.stripeSecretKeyArn());
         }
-        if (props.stripeTestSecretKeyArn() != null && !props.stripeTestSecretKeyArn().isBlank()) {
+        if (props.stripeTestSecretKeyArn() != null
+                && !props.stripeTestSecretKeyArn().isBlank()) {
             var stripeTestSecretArnWithWildcard = props.stripeTestSecretKeyArn().endsWith("*")
                     ? props.stripeTestSecretKeyArn()
                     : props.stripeTestSecretKeyArn() + "-*";
@@ -245,7 +253,8 @@ public class BillingStack extends Stack {
         if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
             billingPortalGetLambdaEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
         }
-        if (props.stripeTestSecretKeyArn() != null && !props.stripeTestSecretKeyArn().isBlank()) {
+        if (props.stripeTestSecretKeyArn() != null
+                && !props.stripeTestSecretKeyArn().isBlank()) {
             billingPortalGetLambdaEnv.with("STRIPE_TEST_SECRET_KEY_ARN", props.stripeTestSecretKeyArn());
         }
         if (props.baseUrl() != null && !props.baseUrl().isBlank()) {
@@ -296,7 +305,8 @@ public class BillingStack extends Stack {
                     "Granted Secrets Manager access to %s for Stripe secret %s",
                     this.billingPortalGetLambda.getFunctionName(), props.stripeSecretKeyArn());
         }
-        if (props.stripeTestSecretKeyArn() != null && !props.stripeTestSecretKeyArn().isBlank()) {
+        if (props.stripeTestSecretKeyArn() != null
+                && !props.stripeTestSecretKeyArn().isBlank()) {
             var stripeTestSecretArnWithWildcard = props.stripeTestSecretKeyArn().endsWith("*")
                     ? props.stripeTestSecretKeyArn()
                     : props.stripeTestSecretKeyArn() + "-*";

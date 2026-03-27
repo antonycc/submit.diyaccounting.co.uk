@@ -5,11 +5,11 @@
   sessionStorage.setItem("__diy_session__", "1");
 
   try {
-    var xhr = new XMLHttpRequest();
+    const xhr = new XMLHttpRequest();
     xhr.open("POST", "/api/session/beacon", true);
     xhr.setRequestHeader("Content-Type", "application/json");
     xhr.send(JSON.stringify({ page: window.location.pathname }));
-  } catch (e) {
-    // fire-and-forget
+  } catch {
+    // beacon failures are expected (ad blockers, offline)
   }
 })();

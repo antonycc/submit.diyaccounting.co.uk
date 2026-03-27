@@ -365,7 +365,8 @@ public class OpsStack extends Stack {
         // Format: {env}-{suffix} e.g., "ci-monitorin-hlth" or "prod-hlth"
         String deploymentPrefix = sanitizeCanaryName(props.deploymentName());
 
-        // S3 bucket for canary artifacts — no explicit bucketName (globally unique; collisions during account migration)
+        // S3 bucket for canary artifacts — no explicit bucketName (globally unique; collisions during account
+        // migration)
         Bucket canaryBucket = Bucket.Builder.create(this, "CanaryArtifacts")
                 .encryption(BucketEncryption.S3_MANAGED)
                 .removalPolicy(RemovalPolicy.DESTROY)

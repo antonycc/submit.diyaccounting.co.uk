@@ -219,7 +219,9 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
 
     // Grant test bundle for user
     const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-    await importedBundleManagement.updateUserBundles(testUserSub, [{ bundleId: "day-guest", expiry, tokensGranted: getBundle("day-guest").tokensGranted, tokensConsumed: 0 }]);
+    await importedBundleManagement.updateUserBundles(testUserSub, [
+      { bundleId: "day-guest", expiry, tokensGranted: getBundle("day-guest").tokensGranted, tokensConsumed: 0 },
+    ]);
   });
 
   it("should complete full VAT submission journey: Auth → Token → Submit → PostReceipt → GetReceipt", async () => {

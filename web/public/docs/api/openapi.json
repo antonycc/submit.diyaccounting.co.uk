@@ -239,8 +239,8 @@
     },
     "/interest" : {
       "post" : {
-        "summary" : "Register waitlist interest",
-        "description" : "Publishes the authenticated user's email to an SNS topic for waitlist registration",
+        "summary" : "Register feedback engagement",
+        "description" : "Publishes the authenticated user's email to an SNS topic for feedback engagement",
         "operationId" : "registerInterest"
       }
     },

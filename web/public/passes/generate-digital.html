@@ -5,10 +5,7 @@
     <meta charset="UTF-8" />
     <title>DIY Accounting Submit - Generate Digital Pass</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="description"
-      content="Generate a shareable digital pass that gives anyone free VAT submission access for 7 days."
-    />
+    <meta name="description" content="Generate a shareable digital pass that gives anyone free VAT submission access for 7 days." />
     <link rel="canonical" href="https://submit.diyaccounting.co.uk/passes/generate-digital.html" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -66,14 +63,13 @@
       <div class="form-container" style="text-align: center">
         <h2>Generate a Digital Pass</h2>
         <p style="color: #666; font-size: 0.95em; max-width: 600px; margin: 0 auto 1.5em">
-          Create a shareable link that gives anyone free VAT submission access for 7 days.
-          This pass allows up to 20 uses &mdash; share it on social media, via email, or in messaging apps.
+          Create a shareable link that gives anyone free VAT submission access for 7 days. This pass allows up to 20 uses &mdash; share it
+          on social media, via email, or in messaging apps.
         </p>
 
         <div id="tokenInfo" style="margin-bottom: 1.5em; display: none">
           <p style="font-size: 0.9em; color: #555">
-            This will use <strong id="tokenCostDisplay">3</strong> of your
-            <strong id="tokensRemainingDisplay">0</strong> remaining tokens
+            This will use <strong id="tokenCostDisplay">3</strong> of your <strong id="tokensRemainingDisplay">0</strong> remaining tokens
           </p>
         </div>
 
@@ -97,26 +93,47 @@
           <h3>Your Digital Pass</h3>
 
           <div style="margin: 1.5em 0">
-            <div id="generatedPassCode" style="font-size: 1.8em; font-weight: bold; letter-spacing: 0.02em; color: #2c5aa0; word-break: break-word"></div>
+            <div
+              id="generatedPassCode"
+              style="font-size: 1.8em; font-weight: bold; letter-spacing: 0.02em; color: #2c5aa0; word-break: break-word"
+            ></div>
           </div>
 
           <div style="margin: 1em 0">
             <div style="display: flex; align-items: center; justify-content: center; gap: 0.5em; flex-wrap: wrap">
               <span id="generatedPassUrl" style="font-size: 0.85em; color: #555; word-break: break-all"></span>
-              <button type="button" id="copyUrlBtn" class="btn" style="font-size: 0.8em; padding: 0.3em 0.8em; min-width: unset">Copy Link</button>
+              <button type="button" id="copyUrlBtn" class="btn" style="font-size: 0.8em; padding: 0.3em 0.8em; min-width: unset">
+                Copy Link
+              </button>
             </div>
           </div>
 
           <div style="display: flex; align-items: center; justify-content: center; gap: 0.5em; margin: 0.5em 0">
             <span id="passCodeSmall" style="font-size: 0.85em; color: #555"></span>
-            <button type="button" id="copyCodeBtn" class="btn" style="font-size: 0.8em; padding: 0.3em 0.8em; min-width: unset">Copy Code</button>
+            <button type="button" id="copyCodeBtn" class="btn" style="font-size: 0.8em; padding: 0.3em 0.8em; min-width: unset">
+              Copy Code
+            </button>
           </div>
 
           <div id="generatedPassQrCode" style="margin: 1.5em auto; max-width: 250px"></div>
 
           <div style="margin: 1em 0; display: flex; justify-content: center; gap: 1em; flex-wrap: wrap">
-            <button type="button" id="downloadSvgBtn" class="btn" style="font-size: 0.85em; padding: 0.4em 1em; min-width: unset; background-color: #495057">Download QR (SVG)</button>
-            <button type="button" id="downloadPngBtn" class="btn" style="font-size: 0.85em; padding: 0.4em 1em; min-width: unset; background-color: #495057">Download QR (PNG)</button>
+            <button
+              type="button"
+              id="downloadSvgBtn"
+              class="btn"
+              style="font-size: 0.85em; padding: 0.4em 1em; min-width: unset; background-color: #495057"
+            >
+              Download QR (SVG)
+            </button>
+            <button
+              type="button"
+              id="downloadPngBtn"
+              class="btn"
+              style="font-size: 0.85em; padding: 0.4em 1em; min-width: unset; background-color: #495057"
+            >
+              Download QR (PNG)
+            </button>
           </div>
 
           <div style="margin-top: 1.5em">
@@ -169,7 +186,11 @@
 
     <script>
       const getIdToken = () => {
-        try { return localStorage.getItem("cognitoIdToken"); } catch { return null; }
+        try {
+          return localStorage.getItem("cognitoIdToken");
+        } catch {
+          return null;
+        }
       };
 
       let __generatedPassUrl = "";
@@ -230,9 +251,7 @@
           const res = await window.fetchWithIdToken("/api/v1/bundle");
           const data = await res.json();
           const bundles = data.bundles || [];
-          const totalRemaining = bundles
-            .filter(b => b.allocated)
-            .reduce((sum, b) => sum + (b.tokensRemaining || 0), 0);
+          const totalRemaining = bundles.filter((b) => b.allocated).reduce((sum, b) => sum + (b.tokensRemaining || 0), 0);
 
           // Read token cost from catalogue
           let tokenCost = 3;
@@ -242,7 +261,7 @@
               const catText = await catRes.text();
               const cat = window.TOML ? window.TOML.parse(catText) : null;
               if (cat && cat.activities) {
-                const activity = cat.activities.find(a => a.id === "generate-pass-digital");
+                const activity = cat.activities.find((a) => a.id === "generate-pass-digital");
                 if (activity && activity.tokenCost !== undefined) tokenCost = activity.tokenCost;
               }
             }
@@ -340,7 +359,9 @@
         try {
           await navigator.clipboard.writeText(__generatedPassUrl);
           document.getElementById("copyUrlBtn").textContent = "Copied!";
-          setTimeout(() => { document.getElementById("copyUrlBtn").textContent = "Copy Link"; }, 2000);
+          setTimeout(() => {
+            document.getElementById("copyUrlBtn").textContent = "Copy Link";
+          }, 2000);
         } catch {
           showStatus("Failed to copy to clipboard", "error");
         }
@@ -352,7 +373,9 @@
         try {
           await navigator.clipboard.writeText(__generatedPassCode);
           document.getElementById("copyCodeBtn").textContent = "Copied!";
-          setTimeout(() => { document.getElementById("copyCodeBtn").textContent = "Copy Code"; }, 2000);
+          setTimeout(() => {
+            document.getElementById("copyCodeBtn").textContent = "Copy Code";
+          }, 2000);
         } catch {
           showStatus("Failed to copy to clipboard", "error");
         }
@@ -389,7 +412,9 @@
       });
 
       // --- Page init
-      try { sessionStorage.removeItem("currentActivity"); } catch {}
+      try {
+        sessionStorage.removeItem("currentActivity");
+      } catch {}
 
       if (window.__submitReady__) {
         initPage();

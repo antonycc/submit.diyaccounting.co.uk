@@ -53,7 +53,7 @@ export function resolveChatConfig() {
  */
 export function escapeTelegramMarkdown(text) {
   if (!text) return "";
-  return text.replace(/([_*`\[])/g, "\\$1");
+  return text.replace(/([_*`[])/g, "\\$1");
 }
 
 /**

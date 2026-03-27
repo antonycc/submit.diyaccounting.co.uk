@@ -74,7 +74,12 @@ export async function up({ envName }) {
     ["HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", `${envName}-env-hmrc-api-requests`, "hashedSub", "id"],
     ["HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME", `${envName}-env-hmrc-vat-return-post-async-requests`, "hashedSub", "requestId"],
     ["HMRC_VAT_RETURN_GET_ASYNC_REQUESTS_TABLE_NAME", `${envName}-env-hmrc-vat-return-get-async-requests`, "hashedSub", "requestId"],
-    ["HMRC_VAT_OBLIGATION_GET_ASYNC_REQUESTS_TABLE_NAME", `${envName}-env-hmrc-vat-obligation-get-async-requests`, "hashedSub", "requestId"],
+    [
+      "HMRC_VAT_OBLIGATION_GET_ASYNC_REQUESTS_TABLE_NAME",
+      `${envName}-env-hmrc-vat-obligation-get-async-requests`,
+      "hashedSub",
+      "requestId",
+    ],
   ];
 
   let totalUpdated = 0;
@@ -99,9 +104,7 @@ export async function up({ envName }) {
   // Read current salt to compute canary hash
   const { SecretsManagerClient, GetSecretValueCommand } = await import("@aws-sdk/client-secrets-manager");
   const smClient = new SecretsManagerClient({ region: process.env.AWS_REGION || "eu-west-2" });
-  const secretResponse = await smClient.send(
-    new GetSecretValueCommand({ SecretId: `${envName}/submit/user-sub-hash-salt` }),
-  );
+  const secretResponse = await smClient.send(new GetSecretValueCommand({ SecretId: `${envName}/submit/user-sub-hash-salt` }));
   const registry = JSON.parse(secretResponse.SecretString);
   const currentSalt = registry.versions[registry.current];
   const canaryInput = "salt-canary-verification-string";

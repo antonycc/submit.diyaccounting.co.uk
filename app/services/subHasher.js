@@ -56,7 +56,7 @@ function parseSaltRegistry(raw) {
  * @returns {Promise<void>}
  */
 export async function initializeSalt() {
-  if (__saltRegistry && (Date.now() - __saltFetchedAt) < SALT_CACHE_TTL_MS) {
+  if (__saltRegistry && Date.now() - __saltFetchedAt < SALT_CACHE_TTL_MS) {
     logger.debug({ message: "Salt already initialized (warm start)" });
     return;
   }

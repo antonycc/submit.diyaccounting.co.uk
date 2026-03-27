@@ -413,7 +413,7 @@
           // Clear pending request data to prevent auto-retry loop on next page load
           sessionStorage.removeItem("pendingObligationsRequest");
           sessionStorage.removeItem("hmrcAccessToken");
-        sessionStorage.removeItem("hmrcTokenScope");
+          sessionStorage.removeItem("hmrcTokenScope");
           sessionStorage.removeItem("oauth_state");
           sessionStorage.removeItem("hmrcAccount");
           sessionStorage.removeItem("currentActivity");
@@ -448,9 +448,7 @@
 
         // Check if we have an access token with sufficient scope
         const accessToken = sessionStorage.getItem("hmrcAccessToken");
-        const scopeSufficient = accessToken && window.hmrcScopeCheck
-          ? await window.hmrcScopeCheck.isTokenSufficient()
-          : !!accessToken;
+        const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
 
         if (!scopeSufficient) {
           if (accessToken) {
@@ -482,9 +480,7 @@
             console.log("Stored pending request and current activity:", requestData, currentActivity, hmrcAccount);
 
             // Get OAuth scope from catalogue
-            const oauthScope = window.hmrcScopeCheck
-              ? await window.hmrcScopeCheck.getOAuthScopeString()
-              : "read:vat";
+            const oauthScope = window.hmrcScopeCheck ? await window.hmrcScopeCheck.getOAuthScopeString() : "read:vat";
 
             // Get OAuth URL with catalogue-driven scope
             let authResponseUrl;

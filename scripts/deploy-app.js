@@ -189,7 +189,7 @@ function resolveDeployment(flags) {
   // S3 bucket: lookup from EdgeStack CloudFormation output
   const edgeStackName = `${appPrefix}-EdgeStack`;
   const originBucket = runCapture(
-    `aws cloudformation describe-stacks --stack-name ${edgeStackName} --region ${AWS_REGION_UE1} --query 'Stacks[0].Outputs[?OutputKey==\`OriginBucketName\`].OutputValue' --output text`
+    `aws cloudformation describe-stacks --stack-name ${edgeStackName} --region ${AWS_REGION_UE1} --query 'Stacks[0].Outputs[?OutputKey==\`OriginBucketName\`].OutputValue' --output text`,
   );
 
   const version = JSON.parse(fs.readFileSync("package.json", "utf-8")).version;

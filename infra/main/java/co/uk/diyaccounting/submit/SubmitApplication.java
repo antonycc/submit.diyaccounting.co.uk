@@ -65,6 +65,7 @@ public class SubmitApplication {
         public String httpApiUrl;
         public String regionalCertificateArn;
         public String githubTokenSecretArn;
+        public String feedbackEngagementEnabled;
         public String stripeSecretKeyArn;
         public String stripeTestSecretKeyArn;
         public String stripePriceIdResidentPro;
@@ -202,8 +203,7 @@ public class SubmitApplication {
                 envOr("TELEGRAM_LIVE_CHAT_ID", appProps.telegramLiveChatId, "(from telegramLiveChatId in cdk.json)");
         var telegramOpsChatId =
                 envOr("TELEGRAM_OPS_CHAT_ID", appProps.telegramOpsChatId, "(from telegramOpsChatId in cdk.json)");
-        var certificateArn =
-                envOr("CERTIFICATE_ARN", appProps.certificateArn, "(from certificateArn in cdk.json)");
+        var certificateArn = envOr("CERTIFICATE_ARN", appProps.certificateArn, "(from certificateArn in cdk.json)");
         var regionalCertificateArn = envOr(
                 "REGIONAL_CERTIFICATE_ARN",
                 appProps.regionalCertificateArn,
@@ -279,6 +279,7 @@ public class SubmitApplication {
                         .baseImageTag(baseImageTag)
                         .cognitoUserPoolArn(cognitoUserPoolArn)
                         .githubTokenSecretArn(githubTokenSecretArn != null ? githubTokenSecretArn : "")
+                        .feedbackEngagementEnabled("true".equalsIgnoreCase(appProps.feedbackEngagementEnabled))
                         .build());
 
         // Create the BillingStack
@@ -299,12 +300,10 @@ public class SubmitApplication {
                         .baseImageTag(baseImageTag)
                         .stripeSecretKeyArn(stripeSecretKeyArn != null ? stripeSecretKeyArn : "")
                         .stripeTestSecretKeyArn(stripeTestSecretKeyArn != null ? stripeTestSecretKeyArn : "")
-                        .stripePriceIdResidentPro(
-                                stripePriceIdResidentPro != null ? stripePriceIdResidentPro : "")
+                        .stripePriceIdResidentPro(stripePriceIdResidentPro != null ? stripePriceIdResidentPro : "")
                         .stripeTestPriceIdResidentPro(
                                 stripeTestPriceIdResidentPro != null ? stripeTestPriceIdResidentPro : "")
-                        .stripePriceIdResidentVat(
-                                stripePriceIdResidentVat != null ? stripePriceIdResidentVat : "")
+                        .stripePriceIdResidentVat(stripePriceIdResidentVat != null ? stripePriceIdResidentVat : "")
                         .stripeTestPriceIdResidentVat(
                                 stripeTestPriceIdResidentVat != null ? stripeTestPriceIdResidentVat : "")
                         .baseUrl(sharedNames.publicBaseUrl)

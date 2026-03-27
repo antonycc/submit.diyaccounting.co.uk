@@ -341,14 +341,26 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
 
     await goToHomePageUsingMainNav(page, screenshotPath);
 
-    // Wait for the page to render activity buttons (needs bundle API response)
-    await page.waitForTimeout(2000);
-    await page.screenshot({ path: `${screenshotPath}/07-token-exhaustion-home.png` });
-
-    // The Submit VAT button should now be disabled with "Insufficient tokens" in its text
+    // Wait for the page to fetch bundle data and render activity buttons.
+    // After tokens are exhausted via DynamoDB, the API may briefly return stale data
+    // due to eventual consistency. Retry navigation if the button isn't disabled.
     const activityButtonText = "Submit VAT (HMRC)";
     const submitButton = page.locator(`button:has-text('${activityButtonText}')`);
-    await expect(submitButton).toBeVisible({ timeout: 10_000 });
+    await expect(submitButton).toBeVisible({ timeout: 15_000 });
+
+    const maxRetries = 3;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      const isDisabled = await submitButton.isDisabled().catch(() => false);
+      if (isDisabled) break;
+      if (attempt < maxRetries) {
+        console.log(`Submit VAT button still enabled (attempt ${attempt}/${maxRetries}), reloading page...`);
+        await page.reload({ waitUntil: "networkidle" });
+        await expect(submitButton).toBeVisible({ timeout: 15_000 });
+      }
+    }
+
+    await page.screenshot({ path: `${screenshotPath}/07-token-exhaustion-home.png` });
+
     await expect(submitButton).toBeDisabled({ timeout: 10_000 });
     // Verify the button itself states the reason for being disabled
     const buttonText = await submitButton.textContent();

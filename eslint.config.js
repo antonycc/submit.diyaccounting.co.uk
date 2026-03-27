@@ -168,6 +168,10 @@ export default [
       "web/public/docs/hmrc-form-field-standards/",
       // Developer documentation and archive (not application code)
       "_developers/",
+      // Vendored minified library
+      "web/public/lib/qrcode.min.js",
+      // Generated bundle (built from web/public/submit.js)
+      "web/public/submit.bundle.js",
     ],
   },
 ];

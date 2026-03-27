@@ -166,7 +166,8 @@ public class ObservabilityStack extends Stack {
             this.cloudTrailLogGroup = LogGroup.fromLogGroupName(
                     this, props.resourceNamePrefix() + "-CloudTrailGroup", cloudTrailLogGroupName);
 
-            // S3 bucket for CloudTrail logs — no explicit bucketName (globally unique; collisions during account migration)
+            // S3 bucket for CloudTrail logs — no explicit bucketName (globally unique; collisions during account
+            // migration)
             Bucket trailBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-TrailBucket")
                     .encryption(BucketEncryption.S3_MANAGED)
                     .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)

@@ -5,12 +5,7 @@
 
 import { validateEnv } from "../../lib/env.js";
 import { createLogger } from "../../lib/logger.js";
-import {
-  extractRequest,
-  http200OkResponse,
-  http403ForbiddenResponse,
-  http500ServerErrorResponse,
-} from "../../lib/httpResponseHelper.js";
+import { extractRequest, http200OkResponse, http403ForbiddenResponse, http500ServerErrorResponse } from "../../lib/httpResponseHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeSalt, hashSub } from "../../services/subHasher.js";
 import { getPassesByIssuer } from "../../data/dynamoDbPassRepository.js";

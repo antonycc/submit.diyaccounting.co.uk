@@ -74,6 +74,8 @@ describe("VAT Flow Frontend JavaScript", () => {
     });
     global.URLSearchParams = window.URLSearchParams;
     global.FormData = window.FormData;
+    global.Event = window.Event;
+    global.CustomEvent = window.CustomEvent;
 
     // Mock fetch
     fetchMock = vi.fn();

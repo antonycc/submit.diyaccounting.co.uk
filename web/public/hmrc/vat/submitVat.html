@@ -449,7 +449,7 @@
 
       // Strip commas from numeric input (thousands separators like "1,234.56" → "1234.56")
       function stripCommas(value) {
-        return String(value).replace(/,/g, '');
+        return String(value).replace(/,/g, "");
       }
 
       // Auto-calculation functions for 9-box VAT return
@@ -659,7 +659,9 @@
           netVatDue: parseFloat(stripCommas(document.getElementById("netVatDue").value)) || 0,
           totalValueSalesExVAT: Math.round(parseFloat(stripCommas(document.getElementById("totalValueSalesExVAT").value)) || 0),
           totalValuePurchasesExVAT: Math.round(parseFloat(stripCommas(document.getElementById("totalValuePurchasesExVAT").value)) || 0),
-          totalValueGoodsSuppliedExVAT: Math.round(parseFloat(stripCommas(document.getElementById("totalValueGoodsSuppliedExVAT").value)) || 0),
+          totalValueGoodsSuppliedExVAT: Math.round(
+            parseFloat(stripCommas(document.getElementById("totalValueGoodsSuppliedExVAT").value)) || 0,
+          ),
           totalAcquisitionsExVAT: Math.round(parseFloat(stripCommas(document.getElementById("totalAcquisitionsExVAT").value)) || 0),
           finalised: true,
         };
@@ -742,9 +744,7 @@
 
         // Check if we already have an HMRC access token with sufficient scope
         const accessToken = sessionStorage.getItem("hmrcAccessToken");
-        const scopeSufficient = accessToken && window.hmrcScopeCheck
-          ? await window.hmrcScopeCheck.isTokenSufficient()
-          : !!accessToken;
+        const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
 
         if (scopeSufficient) {
           // Token available with correct scope - submit directly without OAuth redirect
@@ -768,9 +768,7 @@
             console.log("Stored pending request and current activity:", requestData, currentActivity, hmrcAccount);
 
             // Get OAuth scope from catalogue
-            const oauthScope = window.hmrcScopeCheck
-              ? await window.hmrcScopeCheck.getOAuthScopeString()
-              : "write:vat read:vat";
+            const oauthScope = window.hmrcScopeCheck ? await window.hmrcScopeCheck.getOAuthScopeString() : "write:vat read:vat";
 
             // Get OAuth URL
             let authResponseUrl;
@@ -1003,7 +1001,8 @@
             console.warn("HMRC scope insufficient, clearing token for re-authorization");
             if (window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
             throw new Error(
-              responseJson.error.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.",
+              responseJson.error.userMessage ||
+                "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.",
             );
           }
           const message = `Failed to submit VAT. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;

@@ -94,7 +94,7 @@
 
     <main id="mainContent">
       <div
-        id="waitlistBanner"
+        id="feedbackEngagementBanner"
         style="
           display: none;
           position: sticky;
@@ -108,12 +108,15 @@
           font-size: 0.95em;
         "
         role="complementary"
-        aria-label="Early access registration"
+        aria-label="Feedback engagement"
       >
-        <span>We're getting ready to launch. Register for early access and we'll send you an invitation.</span>
+        <span
+          >We're actively improving this service and would love to hear from you. If you're willing to share feedback, let us know and we'll
+          be in touch.</span
+        >
         <button
           type="button"
-          id="waitlistJoinBtn"
+          id="feedbackEngagementBtn"
           class="btn"
           style="
             margin-left: 1em;
@@ -125,11 +128,11 @@
             vertical-align: middle;
           "
         >
-          Register for Early Access
+          I'm willing to share feedback
         </button>
         <button
           type="button"
-          id="waitlistDismissBtn"
+          id="feedbackDismissBtn"
           style="
             background: none;
             border: none;
@@ -140,7 +143,7 @@
             vertical-align: middle;
             padding: 0 0.3em;
           "
-          aria-label="Dismiss early access banner"
+          aria-label="Dismiss feedback banner"
         >
           &#x2715;
         </button>
@@ -572,43 +575,43 @@
       sessionStorage.removeItem("currentActivity");
       console.log("Current activity cleared");
 
-      // Waitlist banner logic
-      async function initWaitlistBanner() {
-        const banner = document.getElementById("waitlistBanner");
+      // Feedback engagement banner logic
+      async function initFeedbackEngagementBanner() {
+        const banner = document.getElementById("feedbackEngagementBanner");
         if (!banner) return;
 
         const isLoggedIn = !!localStorage.getItem("cognitoIdToken");
-        const alreadyRegistered = localStorage.getItem("waitlistRegistered") === "true";
+        const alreadyRegistered = localStorage.getItem("feedbackEngagementRegistered") === "true";
 
         if (!isLoggedIn || alreadyRegistered) return;
 
         // Check feature flag
         if (window.featureFlags && typeof window.featureFlags.isFeatureEnabled === "function") {
-          const enabled = await window.featureFlags.isFeatureEnabled("waitlist");
+          const enabled = await window.featureFlags.isFeatureEnabled("feedback-engagement");
           if (!enabled) return;
         }
 
         banner.style.display = "block";
 
-        var joinBtn = document.getElementById("waitlistJoinBtn");
-        var dismissBtn = document.getElementById("waitlistDismissBtn");
+        var joinBtn = document.getElementById("feedbackEngagementBtn");
+        var dismissBtn = document.getElementById("feedbackDismissBtn");
 
         if (joinBtn) {
           joinBtn.addEventListener("click", async function () {
             joinBtn.disabled = true;
-            joinBtn.textContent = "Registering...";
+            joinBtn.textContent = "Sending...";
             try {
               var response = await window.fetchWithIdToken("/api/v1/interest", { method: "POST" });
               if (response.ok) {
-                joinBtn.textContent = "You're registered!";
+                joinBtn.textContent = "Thanks! We'll be in touch soon.";
                 joinBtn.style.backgroundColor = "#0a8927";
-                localStorage.setItem("waitlistRegistered", "true");
+                localStorage.setItem("feedbackEngagementRegistered", "true");
               } else {
                 joinBtn.textContent = "Try again";
                 joinBtn.disabled = false;
               }
             } catch (err) {
-              console.error("Waitlist registration failed:", err);
+              console.error("Feedback engagement failed:", err);
               joinBtn.textContent = "Try again";
               joinBtn.disabled = false;
             }
@@ -626,7 +629,7 @@
       function initPage() {
         checkAuthStatus();
         initializeBundles();
-        initWaitlistBanner();
+        initFeedbackEngagementBanner();
       }
 
       if (window.__submitReady__) {

@@ -70,8 +70,12 @@ function parseArgs() {
   }
 
   if (!opts.subscriptionId && !opts.byEmail) {
-    console.error("Usage: node scripts/stripe-cancel-subscription.js <subscription_id> [--immediate | --at-period-end] [--dry-run] [--yes]");
-    console.error("       node scripts/stripe-cancel-subscription.js --by-email <email> [--immediate | --at-period-end] [--dry-run] [--yes]");
+    console.error(
+      "Usage: node scripts/stripe-cancel-subscription.js <subscription_id> [--immediate | --at-period-end] [--dry-run] [--yes]",
+    );
+    console.error(
+      "       node scripts/stripe-cancel-subscription.js --by-email <email> [--immediate | --at-period-end] [--dry-run] [--yes]",
+    );
     process.exit(1);
   }
 
@@ -114,7 +118,10 @@ async function resolveSubscriptionByEmail(email) {
 }
 
 function formatDate(epochSeconds) {
-  return new Date(epochSeconds * 1000).toISOString().replace("T", " ").replace(/\.\d+Z/, " UTC");
+  return new Date(epochSeconds * 1000)
+    .toISOString()
+    .replace("T", " ")
+    .replace(/\.\d+Z/, " UTC");
 }
 
 function displaySubscription(sub) {
@@ -128,7 +135,9 @@ function displaySubscription(sub) {
   if (sub.items?.data?.length > 0) {
     for (const item of sub.items.data) {
       const price = item.price;
-      console.log(`  Plan:               ${price.nickname || price.id} (${(price.unit_amount / 100).toFixed(2)} ${price.currency.toUpperCase()}/${price.recurring?.interval || "?"})`);
+      console.log(
+        `  Plan:               ${price.nickname || price.id} (${(price.unit_amount / 100).toFixed(2)} ${price.currency.toUpperCase()}/${price.recurring?.interval || "?"})`,
+      );
     }
   }
   console.log("----------------------------\n");

@@ -210,5 +210,4 @@ describe("Structured data validation", () => {
     expect(app["@context"]).toBe("https://schema.org");
     expect(app.name).toBe("DIY Accounting Submit");
   });
-
 });

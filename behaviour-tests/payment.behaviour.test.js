@@ -557,7 +557,9 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
       if (webhookResult.timedOut) {
         console.warn("WARNING: Cancellation webhook did not fire within 30s — subscription may still show as active");
       } else {
-        console.log(`Cancellation webhook confirmed: cancelAtPeriodEnd=${webhookResult.cancelAtPeriodEnd}, status=${webhookResult.subscriptionStatus}`);
+        console.log(
+          `Cancellation webhook confirmed: cancelAtPeriodEnd=${webhookResult.cancelAtPeriodEnd}, status=${webhookResult.subscriptionStatus}`,
+        );
       }
     }
 
@@ -578,7 +580,12 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     console.log("=".repeat(60));
 
     // Only run when real Stripe is available (Stripe secret key configured)
-    const stripeKeyAvailable = !!(process.env.STRIPE_SECRET_KEY || process.env.STRIPE_TEST_SECRET_KEY || process.env.STRIPE_SECRET_KEY_ARN || process.env.STRIPE_TEST_SECRET_KEY_ARN);
+    const stripeKeyAvailable = !!(
+      process.env.STRIPE_SECRET_KEY ||
+      process.env.STRIPE_TEST_SECRET_KEY ||
+      process.env.STRIPE_SECRET_KEY_ARN ||
+      process.env.STRIPE_TEST_SECRET_KEY_ARN
+    );
     if (!stripeKeyAvailable) {
       console.log("No Stripe secret key available — skipping deletion webhook verification (simulator mode)");
       return;
