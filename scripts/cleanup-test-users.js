@@ -18,11 +18,7 @@
  */
 
 import { CloudFormationClient, DescribeStacksCommand } from "@aws-sdk/client-cloudformation";
-import {
-  CognitoIdentityProviderClient,
-  ListUsersCommand,
-  AdminDeleteUserCommand,
-} from "@aws-sdk/client-cognito-identity-provider";
+import { CognitoIdentityProviderClient, ListUsersCommand, AdminDeleteUserCommand } from "@aws-sdk/client-cognito-identity-provider";
 import { execFileSync } from "child_process";
 
 const TEST_EMAIL_PATTERN = /^test-.*@test\.diyaccounting\.co\.uk$/;
@@ -54,11 +50,13 @@ async function listTestUsers(userPoolId) {
   let paginationToken;
 
   do {
-    const response = await cognitoClient.send(new ListUsersCommand({
-      UserPoolId: userPoolId,
-      Filter: 'email ^= "test-"',
-      PaginationToken: paginationToken,
-    }));
+    const response = await cognitoClient.send(
+      new ListUsersCommand({
+        UserPoolId: userPoolId,
+        Filter: 'email ^= "test-"',
+        PaginationToken: paginationToken,
+      }),
+    );
 
     for (const user of response.Users || []) {
       const email = user.Attributes?.find((a) => a.Name === "email")?.Value;
@@ -122,8 +120,9 @@ process.env.ENVIRONMENT_NAME = process.env.ENVIRONMENT_NAME || environmentName;
 
     for (const user of testUsers) {
       // Skip users created in the last hour (might be in use by a running test)
-      if (user.createdAt && (now - new Date(user.createdAt).getTime()) < SKIP_IF_CREATED_WITHIN_MS) {
-        if (!jsonOutput) console.log(`  SKIP ${user.email} (created ${Math.round((now - new Date(user.createdAt).getTime()) / 60000)}m ago)`);
+      if (user.createdAt && now - new Date(user.createdAt).getTime() < SKIP_IF_CREATED_WITHIN_MS) {
+        if (!jsonOutput)
+          console.log(`  SKIP ${user.email} (created ${Math.round((now - new Date(user.createdAt).getTime()) / 60000)}m ago)`);
         summary.skipped++;
         summary.users.push({ email: user.email, action: "skipped", reason: "too recent" });
         continue;
@@ -134,13 +133,10 @@ process.env.ENVIRONMENT_NAME = process.env.ENVIRONMENT_NAME || environmentName;
       if (confirm) {
         try {
           // Delete user data from DynamoDB via delete-user-data.js
-          execFileSync("node", [
-            "scripts/delete-user-data.js",
-            deploymentName,
-            "--user-sub", user.sub,
-            "--confirm",
-            "--json",
-          ], { stdio: "pipe", env: { ...process.env } });
+          execFileSync("node", ["scripts/delete-user-data.js", deploymentName, "--user-sub", user.sub, "--confirm", "--json"], {
+            stdio: "pipe",
+            env: { ...process.env },
+          });
 
           // Delete the Cognito user
           await deleteCognitoUser(userPoolId, user.username);

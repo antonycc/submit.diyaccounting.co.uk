@@ -45,8 +45,8 @@
           try {
             const regex = new RegExp(p);
             if (regex.test(normalizedPath) || regex.test("/" + normalizedPath)) return activity;
-          } catch (e) {
-            // skip invalid regex
+          } catch {
+            // skip invalid regex pattern from catalogue
           }
         } else {
           const norm = p.replace(/^\//, "");

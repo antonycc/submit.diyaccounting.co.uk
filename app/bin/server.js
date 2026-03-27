@@ -278,13 +278,16 @@ if (__runDirect) {
     }
   }
   // Detect vendor public IP at startup (same as Lambda cold start) for Gov-Vendor-Public-IP header
-  detectVendorPublicIp().then((ip) => {
-    if (ip) {
-      logger.info(`Detected vendor public IP for fraud prevention headers: ${ip}`);
-    } else {
-      logger.warn("Could not detect vendor public IP — Gov-Vendor-Public-IP will be missing");
-    }
-  });
+  detectVendorPublicIp()
+    .then((ip) => {
+      if (ip) {
+        logger.info(`Detected vendor public IP for fraud prevention headers: ${ip}`);
+      } else {
+        logger.warn("Could not detect vendor public IP — Gov-Vendor-Public-IP will be missing");
+      }
+      return undefined;
+    })
+    .catch((err) => logger.warn(`Vendor public IP detection failed: ${err.message}`));
   app.listen(TEST_SERVER_HTTP_PORT, () => {
     const message = `Listening at http://127.0.0.1:${TEST_SERVER_HTTP_PORT}`;
     console.log(message);

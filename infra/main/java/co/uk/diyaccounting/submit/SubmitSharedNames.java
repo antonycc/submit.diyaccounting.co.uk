@@ -900,7 +900,7 @@ public class SubmitSharedNames {
                 "Creates a GitHub issue for the authenticated user's support request",
                 "submitSupportTicket"));
 
-        // Interest POST Lambda (JWT auth - register waitlist interest)
+        // Interest POST Lambda (JWT auth - feedback engagement)
         this.interestPostLambdaHttpMethod = HttpMethod.POST;
         this.interestPostLambdaUrlPath = "/api/v1/interest";
         this.interestPostLambdaJwtAuthorizer = true;
@@ -918,8 +918,8 @@ public class SubmitSharedNames {
         publishedApiLambdas.add(new PublishedLambda(
                 this.interestPostLambdaHttpMethod,
                 this.interestPostLambdaUrlPath,
-                "Register waitlist interest",
-                "Publishes the authenticated user's email to an SNS topic for waitlist registration",
+                "Register feedback engagement",
+                "Publishes the authenticated user's email to an SNS topic for feedback engagement",
                 "registerInterest"));
 
         // Pass GET Lambda (public, no auth)
@@ -1020,8 +1020,7 @@ public class SubmitSharedNames {
                 "%s-%s".formatted(this.appResourceNamePrefix, passMyPassesGetLambdaHandlerDashed);
         this.passMyPassesGetIngestLambdaHandler =
                 "%s/account/%s".formatted(appLambdaHandlerPrefix, passMyPassesGetLambdaHandlerName);
-        this.passMyPassesGetIngestLambdaArn =
-                "%s-%s".formatted(appLambdaArnPrefix, passMyPassesGetLambdaHandlerDashed);
+        this.passMyPassesGetIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, passMyPassesGetLambdaHandlerDashed);
         this.passMyPassesGetIngestProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.passMyPassesGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
         publishedApiLambdas.add(new PublishedLambda(

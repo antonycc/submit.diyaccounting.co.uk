@@ -143,12 +143,11 @@ public class BillingWebhookStack extends Stack {
         // Lambda function — Docker image from ECR, 0 provisioned concurrency
         // ============================================================================
 
-        ITable bundlesTable =
-                Table.fromTableName(this, "BundlesTable", props.sharedNames().bundlesTableName);
+        ITable bundlesTable = Table.fromTableName(this, "BundlesTable", props.sharedNames().bundlesTableName);
         ITable subscriptionsTable =
                 Table.fromTableName(this, "SubscriptionsTable", props.sharedNames().subscriptionsTableName);
-        String activityBusArn = "arn:aws:events:%s:%s:event-bus/%s"
-                .formatted(region, account, props.sharedNames().activityBusName);
+        String activityBusArn =
+                "arn:aws:events:%s:%s:event-bus/%s".formatted(region, account, props.sharedNames().activityBusName);
 
         var lambdaEnv = new PopulatedMap<String, String>()
                 .with("SUBSCRIPTIONS_DYNAMODB_TABLE_NAME", subscriptionsTable.getTableName())
@@ -158,13 +157,16 @@ public class BillingWebhookStack extends Stack {
         if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
             lambdaEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
         }
-        if (props.stripeTestSecretKeyArn() != null && !props.stripeTestSecretKeyArn().isBlank()) {
+        if (props.stripeTestSecretKeyArn() != null
+                && !props.stripeTestSecretKeyArn().isBlank()) {
             lambdaEnv.with("STRIPE_TEST_SECRET_KEY_ARN", props.stripeTestSecretKeyArn());
         }
-        if (props.stripeWebhookSecretArn() != null && !props.stripeWebhookSecretArn().isBlank()) {
+        if (props.stripeWebhookSecretArn() != null
+                && !props.stripeWebhookSecretArn().isBlank()) {
             lambdaEnv.with("STRIPE_WEBHOOK_SECRET_ARN", props.stripeWebhookSecretArn());
         }
-        if (props.stripeTestWebhookSecretArn() != null && !props.stripeTestWebhookSecretArn().isBlank()) {
+        if (props.stripeTestWebhookSecretArn() != null
+                && !props.stripeTestWebhookSecretArn().isBlank()) {
             lambdaEnv.with("STRIPE_TEST_WEBHOOK_SECRET_ARN", props.stripeTestWebhookSecretArn());
         }
 
@@ -190,7 +192,9 @@ public class BillingWebhookStack extends Stack {
                         .environment(lambdaEnv)
                         .build());
         var webhookFunction = webhookLambda.ingestLambda;
-        infof("Created env-level billing webhook Lambda %s", webhookFunction.getNode().getId());
+        infof(
+                "Created env-level billing webhook Lambda %s",
+                webhookFunction.getNode().getId());
 
         // Grant DynamoDB access
         subscriptionsTable.grantReadWriteData(webhookFunction);
@@ -257,8 +261,7 @@ public class BillingWebhookStack extends Stack {
                 Permission.builder()
                         .action("lambda:InvokeFunction")
                         .principal(new ServicePrincipal("apigateway.amazonaws.com"))
-                        .sourceArn("arn:aws:execute-api:" + region + ":" + account + ":"
-                                + httpApi.getApiId() + "/*")
+                        .sourceArn("arn:aws:execute-api:" + region + ":" + account + ":" + httpApi.getApiId() + "/*")
                         .build());
 
         // ============================================================================

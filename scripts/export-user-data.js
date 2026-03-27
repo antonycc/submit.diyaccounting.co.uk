@@ -38,12 +38,14 @@ async function queryByHashedSub(docClient, tableName, hashedSub) {
   let lastEvaluatedKey = undefined;
 
   do {
-    const response = await docClient.send(new QueryCommand({
-      TableName: tableName,
-      KeyConditionExpression: "hashedSub = :h",
-      ExpressionAttributeValues: { ":h": hashedSub },
-      ExclusiveStartKey: lastEvaluatedKey,
-    }));
+    const response = await docClient.send(
+      new QueryCommand({
+        TableName: tableName,
+        KeyConditionExpression: "hashedSub = :h",
+        ExpressionAttributeValues: { ":h": hashedSub },
+        ExclusiveStartKey: lastEvaluatedKey,
+      }),
+    );
     items.push(...(response.Items || []));
     lastEvaluatedKey = response.LastEvaluatedKey;
   } while (lastEvaluatedKey);

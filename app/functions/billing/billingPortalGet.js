@@ -36,7 +36,7 @@ export async function ingestHandler(event) {
   let decodedToken;
   try {
     decodedToken = decodeJwtToken(event.headers);
-  } catch (error) {
+  } catch {
     return http401UnauthorizedResponse({
       request,
       headers: responseHeaders,

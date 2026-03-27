@@ -98,11 +98,7 @@ public class DataStack extends Stack {
                 props.sharedNames().bundlesTableName,
                 "hashedSub",
                 "bundleId");
-        ensureTimeToLive(
-                this,
-                props.resourceNamePrefix() + "-BundlesTTL",
-                props.sharedNames().bundlesTableName,
-                "ttl");
+        ensureTimeToLive(this, props.resourceNamePrefix() + "-BundlesTTL", props.sharedNames().bundlesTableName, "ttl");
         infof("Ensured bundles DynamoDB table with name %s", props.sharedNames().bundlesTableName);
 
         // Async request tables — 1-hour TTL on "ttl" attribute
@@ -221,10 +217,8 @@ public class DataStack extends Stack {
 
         // Ensure the GSI custom resource waits for the table custom resource to complete.
         // Without this, on fresh stack creation the GSI UpdateTable call races the CreateTable call.
-        var passesEnsureTable =
-                this.getNode().tryFindChild(props.resourceNamePrefix() + "-PassesTable-EnsureTable");
-        var passesEnsureGSI =
-                this.getNode().tryFindChild(props.resourceNamePrefix() + "-PassesIssuedByGSI-EnsureGSI");
+        var passesEnsureTable = this.getNode().tryFindChild(props.resourceNamePrefix() + "-PassesTable-EnsureTable");
+        var passesEnsureGSI = this.getNode().tryFindChild(props.resourceNamePrefix() + "-PassesIssuedByGSI-EnsureGSI");
         if (passesEnsureTable != null && passesEnsureGSI != null) {
             passesEnsureGSI.getNode().addDependency(passesEnsureTable);
         }

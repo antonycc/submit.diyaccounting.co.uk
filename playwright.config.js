@@ -194,10 +194,7 @@ export default defineConfig({
     // Stripe's checkout SPA may detect automated browsers and silently block payment
     // processing. These flags make the browser appear more like a regular user session.
     launchOptions: {
-      args: [
-        "--disable-blink-features=AutomationControlled",
-        "--disable-features=IsolateOrigins,site-per-process",
-      ],
+      args: ["--disable-blink-features=AutomationControlled", "--disable-features=IsolateOrigins,site-per-process"],
     },
   },
 

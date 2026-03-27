@@ -18,9 +18,7 @@ describe("cognitoTokenPost", () => {
     it("should extract email and provider from a Google federated ID token", () => {
       const idToken = buildMockJwt({
         email: "customer@gmail.com",
-        identities: JSON.stringify([
-          { providerName: "Google", providerType: "Google", userId: "123", primary: true },
-        ]),
+        identities: JSON.stringify([{ providerName: "Google", providerType: "Google", userId: "123", primary: true }]),
       });
 
       const result = extractUserInfoFromResponse({

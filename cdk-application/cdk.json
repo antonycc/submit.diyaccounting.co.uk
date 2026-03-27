@@ -37,6 +37,7 @@
     "docRootPath": "../web/public",
     "edgeFunctionAssetPath": "../app/functions/edge",
     "httpApiUrl": "https://placeholder.example.com/",
-    "githubTokenSecretArn": ""
+    "githubTokenSecretArn": "",
+    "feedbackEngagementEnabled": "true"
   }
 }

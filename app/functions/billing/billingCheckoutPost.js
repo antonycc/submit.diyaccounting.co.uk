@@ -52,7 +52,7 @@ export async function ingestHandler(event) {
   let decodedToken;
   try {
     decodedToken = decodeJwtToken(event.headers);
-  } catch (error) {
+  } catch {
     return http401UnauthorizedResponse({
       request,
       headers: responseHeaders,
@@ -81,13 +81,10 @@ export async function ingestHandler(event) {
 
     const body = typeof event.body === "string" ? JSON.parse(event.body) : event.body || {};
     const isSandbox = hasSandboxBundle || body.sandbox === true || event.headers?.["hmrcaccount"] === "sandbox";
-    const sandboxSource = hasSandboxBundle
-      ? "bundle-qualifier"
-      : body.sandbox === true
-        ? "request-body"
-        : event.headers?.["hmrcaccount"] === "sandbox"
-          ? "hmrcaccount-header"
-          : "none";
+    let sandboxSource = "none";
+    if (hasSandboxBundle) sandboxSource = "bundle-qualifier";
+    else if (body.sandbox === true) sandboxSource = "request-body";
+    else if (event.headers?.["hmrcaccount"] === "sandbox") sandboxSource = "hmrcaccount-header";
     logger.info({ message: "Sandbox mode resolved", isSandbox, sandboxSource });
 
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || "https://submit.diyaccounting.co.uk/";

@@ -131,8 +131,7 @@ public class SubmitEnvironment {
                 envOr("HOLDING_DOC_ROOT_PATH", appProps.holdingDocRootPath, "(from holdingDocRootPath in cdk.json)");
         var securityServicesEnabled =
                 Boolean.parseBoolean(envOr("SECURITY_SERVICES_ENABLED", appProps.securityServicesEnabled, "true"));
-        var certificateArn =
-                envOr("CERTIFICATE_ARN", appProps.certificateArn, "(from certificateArn in cdk.json)");
+        var certificateArn = envOr("CERTIFICATE_ARN", appProps.certificateArn, "(from certificateArn in cdk.json)");
         var authCertificateArn =
                 envOr("AUTH_CERTIFICATE_ARN", appProps.authCertificateArn, "(from authCertificateArn in cdk.json)");
         var simulatorCertificateArn = envOr(
@@ -143,8 +142,8 @@ public class SubmitEnvironment {
                 "REGIONAL_CERTIFICATE_ARN",
                 appProps.regionalCertificateArn,
                 "(from regionalCertificateArn in cdk.json)");
-        var stripeSecretKeyArn = envOr(
-                "STRIPE_SECRET_KEY_ARN", appProps.stripeSecretKeyArn, "(from stripeSecretKeyArn in cdk.json)");
+        var stripeSecretKeyArn =
+                envOr("STRIPE_SECRET_KEY_ARN", appProps.stripeSecretKeyArn, "(from stripeSecretKeyArn in cdk.json)");
         var stripeTestSecretKeyArn = envOr(
                 "STRIPE_TEST_SECRET_KEY_ARN",
                 appProps.stripeTestSecretKeyArn,
@@ -319,8 +318,7 @@ public class SubmitEnvironment {
                             .hostedZoneName(appProps.hostedZoneName)
                             .hostedZoneId(appProps.hostedZoneId)
                             .certificateArn(
-                                    simulatorCertificateArn != null
-                                                    && !simulatorCertificateArn.isBlank()
+                                    simulatorCertificateArn != null && !simulatorCertificateArn.isBlank()
                                             ? simulatorCertificateArn
                                             : certificateArn)
                             .build());
@@ -332,13 +330,13 @@ public class SubmitEnvironment {
         }
 
         // Create BillingWebhookStack for always-available Stripe webhook endpoint
-        if (regionalCertificateArn != null && !regionalCertificateArn.isBlank()
+        if (regionalCertificateArn != null
+                && !regionalCertificateArn.isBlank()
                 && !regionalCertificateArn.startsWith("(from")
-                && baseImageTag != null && !baseImageTag.isBlank()
+                && baseImageTag != null
+                && !baseImageTag.isBlank()
                 && !baseImageTag.startsWith("(from")) {
-            infof(
-                    "Synthesizing stack %s for environment %s",
-                    sharedNames.billingWebhookStackId, envName);
+            infof("Synthesizing stack %s for environment %s", sharedNames.billingWebhookStackId, envName);
             this.billingWebhookStack = new BillingWebhookStack(
                     app,
                     sharedNames.billingWebhookStackId,

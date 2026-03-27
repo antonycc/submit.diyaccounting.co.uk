@@ -4,7 +4,7 @@
 // app/functions/billing/billingRecoverPost.js
 
 import { createLogger } from "../../lib/logger.js";
-import { extractRequest, http200OkResponse } from "../../lib/httpResponseHelper.js";
+import { extractRequest } from "../../lib/httpResponseHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
 
 const logger = createLogger({ source: "app/functions/billing/billingRecoverPost.js" });
@@ -20,7 +20,7 @@ export function apiEndpoint(app) {
 /* v8 ignore stop */
 
 export async function ingestHandler(event) {
-  const { request } = extractRequest(event);
+  extractRequest(event);
   logger.info({ message: "Billing recover endpoint - not yet implemented" });
 
   return {

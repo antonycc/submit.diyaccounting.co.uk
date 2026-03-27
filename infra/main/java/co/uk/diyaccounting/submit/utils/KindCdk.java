@@ -278,8 +278,7 @@ public class KindCdk {
      * @param ttlAttributeName The name of the TTL attribute (e.g. "ttl")
      */
     public static void ensureTimeToLive(Stack stack, String id, String tableName, String ttlAttributeName) {
-        Map<String, Object> timeToLiveSpec =
-                Map.of("AttributeName", ttlAttributeName, "Enabled", true);
+        Map<String, Object> timeToLiveSpec = Map.of("AttributeName", ttlAttributeName, "Enabled", true);
 
         Map<String, Object> updateTtlParams = Map.of("TableName", tableName, "TimeToLiveSpecification", timeToLiveSpec);
 

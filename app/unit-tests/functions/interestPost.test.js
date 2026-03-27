@@ -31,7 +31,7 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 describe("interestPost ingestHandler", () => {
   beforeEach(() => {
     Object.assign(process.env, setupTestEnv());
-    process.env.WAITLIST_TOPIC_ARN = "arn:aws:sns:eu-west-2:123456789012:test-waitlist";
+    process.env.FEEDBACK_TOPIC_ARN = "arn:aws:sns:eu-west-2:123456789012:test-feedback-engagement";
     vi.clearAllMocks();
     mockSnsSend.mockResolvedValue({});
   });
@@ -54,8 +54,8 @@ describe("interestPost ingestHandler", () => {
     // Verify SNS publish was called
     expect(mockSnsSend).toHaveBeenCalledTimes(1);
     const publishCommand = mockSnsSend.mock.calls[0][0];
-    expect(publishCommand.input.TopicArn).toBe("arn:aws:sns:eu-west-2:123456789012:test-waitlist");
-    expect(publishCommand.input.Subject).toBe("Waitlist registration");
+    expect(publishCommand.input.TopicArn).toBe("arn:aws:sns:eu-west-2:123456789012:test-feedback-engagement");
+    expect(publishCommand.input.Subject).toBe("Feedback engagement");
     expect(publishCommand.input.Message).toContain("Email: test@test.submit.diyaccounting.co.uk");
     expect(publishCommand.input.Message).toContain("Timestamp:");
   });
@@ -114,8 +114,8 @@ describe("interestPost ingestHandler", () => {
     expect(body.message).toContain("Email not found");
   });
 
-  test("returns 500 when WAITLIST_TOPIC_ARN is not set", async () => {
-    delete process.env.WAITLIST_TOPIC_ARN;
+  test("returns 500 when FEEDBACK_TOPIC_ARN is not set", async () => {
+    delete process.env.FEEDBACK_TOPIC_ARN;
     const event = buildLambdaEvent({ method: "POST" });
     const response = await ingestHandler(event);
     expect(response.statusCode).toBe(500);

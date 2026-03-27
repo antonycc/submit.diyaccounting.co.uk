@@ -67,9 +67,7 @@ async function recordMigration(docClient, PutCommand, tableName, migrationId, en
 
 async function discoverMigrations() {
   const files = await readdir(__dirname);
-  const migrationFiles = files
-    .filter((f) => /^\d{3}-.+\.js$/.test(f))
-    .sort();
+  const migrationFiles = files.filter((f) => /^\d{3}-.+\.js$/.test(f)).sort();
 
   const migrations = [];
   for (const file of migrationFiles) {

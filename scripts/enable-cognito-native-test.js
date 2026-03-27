@@ -108,11 +108,15 @@ async function main() {
   const totpEnv = totpSecret ? ` TEST_AUTH_TOTP_SECRET='${totpSecret}'` : "";
   console.log("Run the auth behaviour test:");
   console.log("");
-  console.log(`  TEST_AUTH_USERNAME='${username}' TEST_AUTH_PASSWORD='${password}'${totpEnv} npm run test:authBehaviour-${environmentName}`);
+  console.log(
+    `  TEST_AUTH_USERNAME='${username}' TEST_AUTH_PASSWORD='${password}'${totpEnv} npm run test:authBehaviour-${environmentName}`,
+  );
   console.log("");
   console.log("Run the submit VAT behaviour test:");
   console.log("");
-  console.log(`  TEST_AUTH_USERNAME='${username}' TEST_AUTH_PASSWORD='${password}'${totpEnv} npm run test:submitVatBehaviour-${environmentName}`);
+  console.log(
+    `  TEST_AUTH_USERNAME='${username}' TEST_AUTH_PASSWORD='${password}'${totpEnv} npm run test:submitVatBehaviour-${environmentName}`,
+  );
   if (totpSecret) {
     console.log("");
     console.log("Generate a TOTP code manually:");

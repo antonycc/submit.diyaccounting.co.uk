@@ -389,7 +389,7 @@ export async function submitFormVat(page, screenshotPath = defaultScreenshotPath
     // Clicking submit triggers HMRC OAuth redirect (scope upgrade to write:vat read:vat).
     // Wait for the navigation to complete before screenshotting.
     await Promise.all([
-      page.waitForURL(/.*/,  { timeout: 15000 }),
+      page.waitForURL(/.*/, { timeout: 15000 }),
       loggedClick(page, "#submitBtn", "Submitting VAT form", { screenshotPath }),
     ]);
     const applicationName = "DIY Accounting Submit";
@@ -703,7 +703,7 @@ export async function submitVatObligationsForm(page, screenshotPath = defaultScr
     // Clicking retrieve may trigger HMRC OAuth redirect (if no valid token with sufficient scope).
     // Use waitForURL to handle both outcomes: same-page results or cross-origin OAuth redirect.
     await Promise.all([
-      page.waitForURL(/.*/,  { timeout: 15000 }),
+      page.waitForURL(/.*/, { timeout: 15000 }),
       loggedClick(page, "#retrieveBtn", "Submitting VAT obligations form", { screenshotPath }),
     ]);
     await page.waitForLoadState("domcontentloaded");
@@ -1227,10 +1227,7 @@ export async function clickObligationSubmitReturn(page, screenshotPath = default
     console.log("[clickObligationSubmitReturn] Found 'Submit Return' button, clicking...");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-submit-return-btn-found.png` });
 
-    await Promise.all([
-      page.waitForURL(/submitVat\.html/, { timeout: 15000 }),
-      submitReturnBtn.click(),
-    ]);
+    await Promise.all([page.waitForURL(/submitVat\.html/, { timeout: 15000 }), submitReturnBtn.click()]);
 
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
@@ -1242,7 +1239,9 @@ export async function clickObligationSubmitReturn(page, screenshotPath = default
     const periodStart = url.searchParams.get("periodStart");
     const periodEnd = url.searchParams.get("periodEnd");
 
-    console.log(`[clickObligationSubmitReturn] Navigated to submitVat.html: vrn=${vrn}, periodStart=${periodStart}, periodEnd=${periodEnd}`);
+    console.log(
+      `[clickObligationSubmitReturn] Navigated to submitVat.html: vrn=${vrn}, periodStart=${periodStart}, periodEnd=${periodEnd}`,
+    );
 
     // Verify the form is visible
     await expect(page.locator("#vatSubmissionForm")).toBeVisible({ timeout: 10000 });
@@ -1270,10 +1269,7 @@ export async function clickObligationViewReturn(page, screenshotPath = defaultSc
     console.log("[clickObligationViewReturn] Found 'View Return' button, clicking...");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-view-return-btn-found.png` });
 
-    await Promise.all([
-      page.waitForURL(/viewVatReturn\.html/, { timeout: 15000 }),
-      viewReturnBtn.click(),
-    ]);
+    await Promise.all([page.waitForURL(/viewVatReturn\.html/, { timeout: 15000 }), viewReturnBtn.click()]);
 
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
@@ -1308,7 +1304,9 @@ export async function clickObligationViewReturn(page, screenshotPath = defaultSc
     const periodStart = url.searchParams.get("periodStart");
     const periodEnd = url.searchParams.get("periodEnd");
 
-    console.log(`[clickObligationViewReturn] Navigated to viewVatReturn.html: vrn=${vrn}, periodStart=${periodStart}, periodEnd=${periodEnd}`);
+    console.log(
+      `[clickObligationViewReturn] Navigated to viewVatReturn.html: vrn=${vrn}, periodStart=${periodStart}, periodEnd=${periodEnd}`,
+    );
 
     // Check if results are already visible (auto-submitted) or form is visible (needs manual submit).
     const formVisible = await page.locator("#searchForm").isVisible();

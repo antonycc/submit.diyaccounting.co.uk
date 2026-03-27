@@ -17,7 +17,7 @@ version = "1.0.0"
 # caches it, and exposes a simple isFeatureEnabled(id) API.
 
 [[features]]
-id = "waitlist"
-name = "Register for Early Access"
+id = "feedback-engagement"
+name = "Feedback Engagement"
 enabled = true
-description = "Show early access registration banner for authenticated users"
+description = "Show feedback engagement banner for authenticated users"

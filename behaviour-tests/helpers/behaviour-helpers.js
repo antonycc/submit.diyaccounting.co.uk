@@ -646,7 +646,7 @@ export async function createHmrcTestUser(hmrcClientId, hmrcClientSecret, options
             maxRetries,
             retryDelayMs: Math.round(retryDelay),
           });
-          await new Promise(r => setTimeout(r, retryDelay));
+          await new Promise((r) => setTimeout(r, retryDelay));
           continue;
         }
         const tokenErrorDetails = tokenResponseBody?.error_description || tokenResponseBody?.error || JSON.stringify(tokenResponseBody);
@@ -728,7 +728,7 @@ export async function createHmrcTestUser(hmrcClientId, hmrcClientSecret, options
             maxRetries,
             retryDelayMs: Math.round(retryDelay),
           });
-          await new Promise(r => setTimeout(r, retryDelay));
+          await new Promise((r) => setTimeout(r, retryDelay));
           continue;
         }
         const errorDetails = responseBody?.message || responseBody?.error || JSON.stringify(responseBody);
@@ -777,7 +777,7 @@ export async function createHmrcTestUser(hmrcClientId, hmrcClientSecret, options
           retryDelayMs: Math.round(retryDelay),
           error: error.message,
         });
-        await new Promise(r => setTimeout(r, retryDelay));
+        await new Promise((r) => setTimeout(r, retryDelay));
         continue;
       }
       logger.error({
@@ -917,4 +917,3 @@ export function generatePeriodDates() {
     periodEnd: "2017-06-30",
   };
 }
-

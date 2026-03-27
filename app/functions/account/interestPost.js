@@ -45,7 +45,7 @@ export async function ingestHandler(event) {
     });
   }
 
-  logger.info({ message: "Processing waitlist interest request", requestId });
+  logger.info({ message: "Processing feedback engagement request", requestId });
 
   // Extract email from JWT authorizer context
   const user = extractUserFromAuthorizerContext(event);
@@ -59,14 +59,14 @@ export async function ingestHandler(event) {
     });
   }
 
-  const topicArn = process.env.WAITLIST_TOPIC_ARN;
+  const topicArn = process.env.FEEDBACK_TOPIC_ARN;
   if (!topicArn) {
-    logger.error({ message: "WAITLIST_TOPIC_ARN environment variable is not set" });
+    logger.error({ message: "FEEDBACK_TOPIC_ARN environment variable is not set" });
     return http500ServerErrorResponse({
       request,
       headers: { ...responseHeaders },
-      message: "Waitlist service not configured",
-      error: "WAITLIST_TOPIC_ARN not set",
+      message: "Feedback engagement service not configured",
+      error: "FEEDBACK_TOPIC_ARN not set",
     });
   }
 
@@ -75,15 +75,15 @@ export async function ingestHandler(event) {
     await snsClient.send(
       new PublishCommand({
         TopicArn: topicArn,
-        Subject: "Waitlist registration",
-        Message: `New waitlist registration:\n\nEmail: ${email}\nTimestamp: ${timestamp}`,
+        Subject: "Feedback engagement",
+        Message: `New feedback engagement:\n\nEmail: ${email}\nTimestamp: ${timestamp}`,
       }),
     );
 
-    logger.info({ message: "Waitlist interest published to SNS", email, requestId });
+    logger.info({ message: "Feedback engagement published to SNS", email, requestId });
     await publishActivityEvent({
-      event: "waitlist-registered",
-      summary: "Waitlist: " + maskEmail(email),
+      event: "feedback-engagement-registered",
+      summary: "Feedback: " + maskEmail(email),
       detail: { email: maskEmail(email) },
     });
 
@@ -93,7 +93,7 @@ export async function ingestHandler(event) {
       data: { registered: true },
     });
   } catch (error) {
-    logger.error({ message: "Failed to publish waitlist interest", error: error.message, stack: error.stack });
+    logger.error({ message: "Failed to publish feedback engagement", error: error.message, stack: error.stack });
 
     return http500ServerErrorResponse({
       request,

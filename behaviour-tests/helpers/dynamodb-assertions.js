@@ -192,9 +192,7 @@ export async function assertConsistentHashedSub(exportFilePath, description = ""
       `Expected authenticated requests to have a single hashedSub${desc}, but found ${authenticatedHashedSubs.length}`,
     ).toBe(1);
 
-    logger.info(
-      `Found ${authenticatedRequests.length} authenticated HMRC API requests with hashedSub ${authenticatedHashedSubs[0]}`,
-    );
+    logger.info(`Found ${authenticatedRequests.length} authenticated HMRC API requests with hashedSub ${authenticatedHashedSubs[0]}`);
   } else if (allowOAuthDifference) {
     // Unfiltered mode with OAuth difference allowed: validate at most 2 hashedSubs
     const hashedSubs = [...new Set(allRecords.map((r) => r.hashedSub).filter((h) => h))];
@@ -329,12 +327,8 @@ export async function assertFraudPreventionHeaders(
   // Separate successful responses from network failures (statusCode 0).
   // HMRC sandbox fraud prevention endpoints intermittently fail at the network level,
   // causing Lambda to record statusCode 0. These are transient issues, not test failures.
-  const feedbackNetworkFailures = fraudPreventionHeadersValidationFeedbackGetRequests.filter(
-    (r) => r.httpResponse?.statusCode === 0,
-  );
-  const feedbackSuccessfulRequests = fraudPreventionHeadersValidationFeedbackGetRequests.filter(
-    (r) => r.httpResponse?.statusCode !== 0,
-  );
+  const feedbackNetworkFailures = fraudPreventionHeadersValidationFeedbackGetRequests.filter((r) => r.httpResponse?.statusCode === 0);
+  const feedbackSuccessfulRequests = fraudPreventionHeadersValidationFeedbackGetRequests.filter((r) => r.httpResponse?.statusCode !== 0);
   if (feedbackNetworkFailures.length > 0) {
     console.log(
       `[DynamoDB Assertions]: ${feedbackNetworkFailures.length} feedback request(s) had network failures (statusCode 0) — skipping (HMRC sandbox flakiness)`,
@@ -373,12 +367,7 @@ export async function assertFraudPreventionHeaders(
 
   // Assert Fraud prevention headers validation GET request exists and validate key fields
   // First assert without filter to confirm at least one record exists in the full export
-  assertHmrcApiRequestExists(
-    hmrcApiRequestsFile,
-    "GET",
-    `/test/fraud-prevention-headers/validate`,
-    "Fraud prevention headers validation",
-  );
+  assertHmrcApiRequestExists(hmrcApiRequestsFile, "GET", `/test/fraud-prevention-headers/validate`, "Fraud prevention headers validation");
   // Then filter to current user's records for detailed assertions (errors/warnings)
   let fraudPreventionHeadersValidationGetRequests = findHmrcApiRequestsByMethodAndUrl(
     hmrcApiRequestsFile,
@@ -399,12 +388,8 @@ export async function assertFraudPreventionHeaders(
   // Separate successful responses from network failures (statusCode 0).
   // HMRC sandbox fraud prevention endpoints intermittently fail at the network level,
   // causing Lambda to record statusCode 0. These are transient issues, not test failures.
-  const validationNetworkFailures = fraudPreventionHeadersValidationGetRequests.filter(
-    (r) => r.httpResponse?.statusCode === 0,
-  );
-  const validationSuccessfulRequests = fraudPreventionHeadersValidationGetRequests.filter(
-    (r) => r.httpResponse?.statusCode !== 0,
-  );
+  const validationNetworkFailures = fraudPreventionHeadersValidationGetRequests.filter((r) => r.httpResponse?.statusCode === 0);
+  const validationSuccessfulRequests = fraudPreventionHeadersValidationGetRequests.filter((r) => r.httpResponse?.statusCode !== 0);
   if (validationNetworkFailures.length > 0) {
     console.log(
       `[DynamoDB Assertions]: ${validationNetworkFailures.length} validation request(s) had network failures (statusCode 0) — skipping (HMRC sandbox flakiness)`,

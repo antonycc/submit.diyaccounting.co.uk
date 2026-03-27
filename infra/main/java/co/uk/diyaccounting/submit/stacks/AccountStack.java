@@ -132,6 +132,11 @@ public class AccountStack extends Stack {
             return "antonycc/submit.diyaccounting.co.uk";
         }
 
+        @Value.Default
+        default boolean feedbackEngagementEnabled() {
+            return true;
+        }
+
         static ImmutableAccountStackProps.Builder builder() {
             return ImmutableAccountStackProps.builder();
         }
@@ -508,59 +513,65 @@ public class AccountStack extends Stack {
         }
 
         // ============================================================================
-        // Interest POST Lambda (JWT auth - register waitlist interest via SNS)
+        // Interest POST Lambda (JWT auth - feedback engagement via SNS)
+        // Feature-switched via feedbackEngagementEnabled in cdk.json
         // ============================================================================
-        var waitlistTopic = Topic.Builder.create(this, "%s-waitlist".formatted(props.resourceNamePrefix()))
-                .topicName("%s-waitlist".formatted(props.resourceNamePrefix()))
-                .build();
-        waitlistTopic.addSubscription(new EmailSubscription("antony@diyaccounting.co.uk"));
+        if (props.feedbackEngagementEnabled()) {
+            var feedbackTopic = Topic.Builder.create(
+                            this, "%s-feedback-engagement".formatted(props.resourceNamePrefix()))
+                    .topicName("%s-feedback-engagement".formatted(props.resourceNamePrefix()))
+                    .build();
+            feedbackTopic.addSubscription(new EmailSubscription("antony@diyaccounting.co.uk"));
 
-        var interestPostLambdaEnv = new PopulatedMap<String, String>()
-                .with("ENVIRONMENT_NAME", props.envName())
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
-                .with("WAITLIST_TOPIC_ARN", waitlistTopic.getTopicArn());
-        var interestPostApiLambda = new ApiLambda(
-                this,
-                ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().interestPostIngestLambdaFunctionName)
-                        .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().interestPostIngestLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().interestPostIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().interestPostIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().interestPostIngestProvisionedConcurrencyLambdaAliasArn)
-                        .ingestProvisionedConcurrency(0)
-                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().interestPostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().interestPostLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().interestPostLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().interestPostLambdaCustomAuthorizer)
-                        .environment(interestPostLambdaEnv)
-                        .build());
+            var interestPostLambdaEnv = new PopulatedMap<String, String>()
+                    .with("ENVIRONMENT_NAME", props.envName())
+                    .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                    .with("FEEDBACK_TOPIC_ARN", feedbackTopic.getTopicArn());
+            var interestPostApiLambda = new ApiLambda(
+                    this,
+                    ApiLambdaProps.builder()
+                            .idPrefix(props.sharedNames().interestPostIngestLambdaFunctionName)
+                            .baseImageTag(props.baseImageTag())
+                            .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                            .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                            .ingestFunctionName(props.sharedNames().interestPostIngestLambdaFunctionName)
+                            .ingestHandler(props.sharedNames().interestPostIngestLambdaHandler)
+                            .ingestLambdaArn(props.sharedNames().interestPostIngestLambdaArn)
+                            .ingestProvisionedConcurrencyAliasArn(
+                                    props.sharedNames().interestPostIngestProvisionedConcurrencyLambdaAliasArn)
+                            .ingestProvisionedConcurrency(0)
+                            .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                            .httpMethod(props.sharedNames().interestPostLambdaHttpMethod)
+                            .urlPath(props.sharedNames().interestPostLambdaUrlPath)
+                            .jwtAuthorizer(props.sharedNames().interestPostLambdaJwtAuthorizer)
+                            .customAuthorizer(props.sharedNames().interestPostLambdaCustomAuthorizer)
+                            .environment(interestPostLambdaEnv)
+                            .build());
 
-        this.interestPostLambdaProps = interestPostApiLambda.apiProps;
-        this.interestPostLambda = interestPostApiLambda.ingestLambda;
-        this.interestPostLambdaLogGroup = interestPostApiLambda.logGroup;
-        this.lambdaFunctionProps.add(this.interestPostLambdaProps);
+            this.interestPostLambdaProps = interestPostApiLambda.apiProps;
+            this.interestPostLambda = interestPostApiLambda.ingestLambda;
+            this.interestPostLambdaLogGroup = interestPostApiLambda.logGroup;
+            this.lambdaFunctionProps.add(this.interestPostLambdaProps);
 
-        // Grant permission to publish to the waitlist SNS topic
-        waitlistTopic.grantPublish(this.interestPostLambda);
+            // Grant permission to publish to the feedback engagement SNS topic
+            feedbackTopic.grantPublish(this.interestPostLambda);
 
-        // Grant EventBridge PutEvents permission
-        this.interestPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
-                .effect(Effect.ALLOW)
-                .actions(List.of("events:PutEvents"))
-                .resources(List.of(activityBusArn))
-                .build());
+            // Grant EventBridge PutEvents permission
+            this.interestPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("events:PutEvents"))
+                    .resources(List.of(activityBusArn))
+                    .build());
 
-        infof(
-                "Created Interest POST Lambda %s with handler %s",
-                this.interestPostLambda.getNode().getId(), props.sharedNames().interestPostIngestLambdaHandler);
+            infof(
+                    "Created Interest POST Lambda %s with handler %s",
+                    this.interestPostLambda.getNode().getId(), props.sharedNames().interestPostIngestLambdaHandler);
 
-        cfnOutput(this, "InterestPostLambdaArn", this.interestPostLambda.getFunctionArn());
-        cfnOutput(this, "WaitlistTopicArn", waitlistTopic.getTopicArn());
+            cfnOutput(this, "InterestPostLambdaArn", this.interestPostLambda.getFunctionArn());
+            cfnOutput(this, "FeedbackEngagementTopicArn", feedbackTopic.getTopicArn());
+        } else {
+            infof("Skipping Feedback Engagement Lambda - feedbackEngagementEnabled is false");
+        }
 
         // ============================================================================
         // Pass GET Lambda (public, no auth)
@@ -728,7 +739,9 @@ public class AccountStack extends Stack {
                 .actions(List.of("events:PutEvents"))
                 .resources(List.of(activityBusArn))
                 .build());
-        infof("Created Pass Generate POST Lambda %s", this.passGeneratePostLambda.getNode().getId());
+        infof(
+                "Created Pass Generate POST Lambda %s",
+                this.passGeneratePostLambda.getNode().getId());
 
         // ============================================================================
         // Pass My Passes GET Lambda (JWT auth - list user's generated passes)
@@ -768,7 +781,9 @@ public class AccountStack extends Stack {
                 .actions(List.of("events:PutEvents"))
                 .resources(List.of(activityBusArn))
                 .build());
-        infof("Created Pass My Passes GET Lambda %s", this.passMyPassesGetLambda.getNode().getId());
+        infof(
+                "Created Pass My Passes GET Lambda %s",
+                this.passMyPassesGetLambda.getNode().getId());
 
         // ============================================================================
         // Bundle Capacity Reconciliation Lambda (EventBridge scheduled, every 5 minutes)
