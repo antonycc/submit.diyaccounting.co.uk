@@ -752,7 +752,7 @@ jobs:
       # --- Build and push env-level Docker image (self-contained, no app deploy dependency) ---
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Set up QEMU for ARM64
         uses: docker/setup-qemu-action@v3

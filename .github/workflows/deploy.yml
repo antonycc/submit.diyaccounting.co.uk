@@ -435,7 +435,7 @@ jobs:
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
       - name: Set up Docker
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Checkout
         uses: actions/checkout@v6
