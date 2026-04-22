@@ -33,6 +33,7 @@ on:
           - 'bundleBehaviour'
           - 'passRedemptionBehaviour'
           - 'tokenEnforcementBehaviour'
+          - 'tokenRefreshBehaviour'
           - 'postVatReturnBehaviour'
           - 'getVatObligationsBehaviour'
           - 'getVatReturnBehaviour'
