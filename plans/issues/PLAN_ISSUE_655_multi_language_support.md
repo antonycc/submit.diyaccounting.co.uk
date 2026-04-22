@@ -66,7 +66,7 @@ Run English originals through a translation service (DeepL/Google) nightly to se
 
 ## Questions (for QUESTIONS.md)
 
-- Q655.1: Languages to support in the first cut? (My recommendation: EN, CY, PL; EN-GB pass for UK idioms.)
+- ~~Q655.1: Languages to support in the first cut?~~ — **answered 2026-04-22: EN, CY, PL, plus other UK-large-community languages.** Concretely, the target set is English (base), Welsh (cy), Polish (pl), plus the next four by UK speaker population per the 2021 Census: **Punjabi (pa), Urdu (ur), Bengali (bn), Gujarati (gu)**. Add Romanian (ro) if the small-business demographic signal supports it (TBC). Implementation: land EN+CY+PL first, add the RTL/complex-script languages (ur, bn) in a follow-up because they require a separate font-loading + bidi CSS pass.
 - Q655.2: Accept a library dependency (i18next) or keep it dependency-free?
 - Q655.3: Do we want server-rendered locales for SEO from day 1, or client-side first?
 - Q655.4: Translation source — community volunteers, paid translators, or machine + review?

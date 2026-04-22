@@ -100,7 +100,7 @@ External vendor handles tracking + commission. Loses the token economics integra
 - Q652.2: Ambassador tier thresholds — 5 / 15 / ? — should Gold open at 15 or later based on expected conversion funnel?
 - Q652.3: Commission track (6.4) — tie to Stripe payment integration PR timeline.
 - Q652.4: Accountant-partner verification — manual review OK, or want a self-serve workflow?
-- Q652.5: Admin UI — IAM-based (Cognito group) or token-based (bundle with admin flag)?
+- ~~Q652.5: Admin UI gating~~ — **answered 2026-04-22: Cognito user group (IAM-based).** Admin Lambda checks `cognito:groups` claim for `admin`; reject otherwise. Group membership managed via Cognito console / IAM; no bundle hack.
 
 ## Good fit for Copilot?
 

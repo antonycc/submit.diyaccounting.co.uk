@@ -74,7 +74,7 @@ E.g. Veeam, N2WS. More capable UI and reporting but adds vendor cost and surface
 ## Questions (for QUESTIONS.md)
 
 - Q715.1: SSO admin policy for `submit-backup` — start with `AdministratorAccess`, downgrade to a restricted backup-ops policy once the bootstrap is stable? (Recommendation: yes.)
-- Q715.2: Should the monthly automated restore-test run against a **real prod backup** (data exposure risk in CI) or only a masked subset? (Recommendation: mask PII columns in the restore job if the test runs unattended in CI.)
+- ~~Q715.2~~ — **answered 2026-04-22: real prod data, masked in CI.** The restore-test workflow will run a masking Lambda (Step 3.3 of `PLAN_CROSS_ACCOUNT_BACKUPS.md`) between the AWS Backup restore and the test swap-in. Columns to mask on write: `email`, `givenName`, `familyName`, `phoneNumber`, HMRC `vrn` (if stored), any `shippingAddress`. `hashedSub` rehashed with a CI-only salt so joins still work within the test run but cannot be correlated back to prod.
 - Q715.3: Cross-region copy (eu-west-2 → eu-west-1) as a follow-up? (Recommendation: yes, cheap.)
 - Q715.4: Salt backup — confirm the salt secret backup is covered by AWS Backup for Secrets Manager, or needs a bespoke export?
 

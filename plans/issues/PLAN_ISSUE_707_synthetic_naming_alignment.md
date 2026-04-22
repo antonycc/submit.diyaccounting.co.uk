@@ -80,7 +80,7 @@ Write a "these all mean the same thing" doc, don't rename. Cheapest; does not re
 ## Questions (for QUESTIONS.md)
 
 - Q707.1: Keep `sandbox` in the sessionStorage key `hmrcAccount=sandbox` (vendor contract) or align with the rename? (Recommendation: keep — it's HMRC's word.)
-- Q707.2: UI copy — "Synthetic mode" vs "Developer mode" as the public label? (Developer mode is more understood; synthetic is more correct. Maybe keep "Developer mode" in the UI copy but `synthetic` everywhere in code.)
+- ~~Q707.2: UI copy~~ — **answered 2026-04-22: "Developer mode" wins** for the public-facing label (user-familiar). Code normalises to `synthetic` everywhere internally. Result: UI strings stay as "Developer mode" / "Developer options"; every code identifier, env var (except the HMRC vendor `sandbox` terms), DynamoDB field, and test name uses `synthetic`.
 - Q707.3: Migration window for `testPass` shim — 30 or 90 days?
 
 ## Good fit for Copilot?
