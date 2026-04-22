@@ -14,10 +14,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.SetEnvironmentVariable;
+import org.opentest4j.AssertionFailedError;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.AppProps;
 import software.amazon.awscdk.assertions.Template;
@@ -69,7 +71,26 @@ class SubmitApplicationCdkResourceTest {
         // 13 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), interestPost(1), passGet(1),
         // passPost(1), passAdminPost(1), passGeneratePost(1), passMyPassesGet(1),
         // bundleCapacityReconcile(1), sessionBeaconPost(1)
-        Template.fromStack(submitApplication.accountStack).resourceCountIs("AWS::Lambda::Function", 13);
+        Template accountStackTemplate = Template.fromStack(submitApplication.accountStack);
+        accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 13);
+
+        // Regression guard: bundleGet performs lazy token refresh via dynamodb:UpdateItem on the
+        // bundles table (see app/functions/account/bundleGet.js resetTokens). The CDK grant MUST be
+        // grantReadWriteData on bundlesTable. If someone reverts to grantReadData the count here
+        // drops below the expected threshold and the test fails.
+        //
+        // Policies granting dynamodb:UpdateItem on the bundles table (logical id contains
+        // "bundles-table"): bundleGet(1) + bundlePost ingest+worker(2) + bundleDelete ingest+worker(2)
+        // = 5 expected. The per-Lambda assertion below is the primary guard; the count is
+        // informational.
+        long bundleGetUpdateItemPolicies = countIamPoliciesWithUpdateItemOnBundlesTable(accountStackTemplate, "bundle-get");
+        if (bundleGetUpdateItemPolicies < 1) {
+            dumpIamPolicies(accountStackTemplate);
+            throw new AssertionFailedError("bundleGet Lambda role is missing dynamodb:UpdateItem on the bundles table. "
+                    + "Check AccountStack.java grantReadWriteData for bundleGetLambda — "
+                    + "this was the root cause of the 2026-04 production incident.");
+        }
+        infof("IAM guard: bundleGet has %d policies with UpdateItem on bundles table (expected >= 1)", bundleGetUpdateItemPolicies);
 
         infof("Created stack:", submitApplication.billingStack.getStackName());
         // 3 Lambdas: billingCheckoutPost(1), billingPortalGet(1), billingRecoverPost(1)
@@ -126,6 +147,149 @@ class SubmitApplicationCdkResourceTest {
             // 2 Lambdas: self-destruct function + AwsCustomResource backing Lambda for ensureLogGroup
             Template.fromStack(submitApplication.selfDestructStack).resourceCountIs("AWS::Lambda::Function", 2);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void dumpIamPolicies(Template template) {
+        Map<String, Map<String, Object>> policies = template.findResources("AWS::IAM::Policy");
+        infof("[IAM diag] Found %d AWS::IAM::Policy resources in AccountStack", policies.size());
+        for (Map.Entry<String, Map<String, Object>> e : policies.entrySet()) {
+            Map<String, Object> props = (Map<String, Object>) e.getValue().get("Properties");
+            if (props == null) continue;
+            Object roles = props.get("Roles");
+            String rolesStr = roles == null ? "<null>" : roles.toString();
+            infof("[IAM diag] policy=%s Roles=%s", e.getKey(), rolesStr);
+            Object doc = props.get("PolicyDocument");
+            if (doc instanceof Map) {
+                Object stmts = ((Map<String, Object>) doc).get("Statement");
+                if (stmts instanceof List<?>) {
+                    int i = 0;
+                    for (Object s : (List<Object>) stmts) {
+                        if (s instanceof Map) {
+                            Map<String, Object> st = (Map<String, Object>) s;
+                            Object act = st.get("Action");
+                            Object res = st.get("Resource");
+                            infof("[IAM diag]   stmt[%d] Action=%s Resource=%s", i, act, res);
+                        }
+                        i++;
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Count AWS::IAM::Policy resources in {@code template} that (a) attach to a role whose logical
+     * id contains {@code lambdaSlug} and (b) grant {@code dynamodb:UpdateItem} on a resource whose
+     * logical id contains "bundles-table".
+     */
+    private static long countIamPoliciesWithUpdateItemOnBundlesTable(Template template, String lambdaSlug) {
+        Map<String, Map<String, Object>> policies = template.findResources("AWS::IAM::Policy");
+        long matches = 0;
+        for (Map.Entry<String, Map<String, Object>> entry : policies.entrySet()) {
+            Map<String, Object> resource = entry.getValue();
+            @SuppressWarnings("unchecked")
+            Map<String, Object> props = (Map<String, Object>) resource.get("Properties");
+            if (props == null) continue;
+            if (!policyAttachesToRoleMatching(props, lambdaSlug)) continue;
+            if (!policyStatementsGrantUpdateItemOnBundlesTable(props)) continue;
+            matches++;
+        }
+        return matches;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static boolean policyAttachesToRoleMatching(Map<String, Object> policyProps, String slug) {
+        Object roles = policyProps.get("Roles");
+        if (!(roles instanceof List<?>)) return false;
+        for (Object role : (List<Object>) roles) {
+            if (!(role instanceof Map)) continue;
+            Object ref = ((Map<String, Object>) role).get("Ref");
+            if (ref instanceof String && ((String) ref).toLowerCase().contains(slug.replace("-", ""))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static boolean policyStatementsGrantUpdateItemOnBundlesTable(Map<String, Object> policyProps) {
+        Object document = policyProps.get("PolicyDocument");
+        if (!(document instanceof Map)) return false;
+        Object statements = ((Map<String, Object>) document).get("Statement");
+        if (!(statements instanceof List<?>)) return false;
+        for (Object statementObj : (List<Object>) statements) {
+            if (!(statementObj instanceof Map)) continue;
+            Map<String, Object> statement = (Map<String, Object>) statementObj;
+            if (!statementGrantsUpdateItem(statement)) continue;
+            if (statementTargetsBundlesTable(statement)) return true;
+        }
+        return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static boolean statementGrantsUpdateItem(Map<String, Object> statement) {
+        Object action = statement.get("Action");
+        if (action instanceof String) return "dynamodb:UpdateItem".equals(action);
+        if (action instanceof List<?>) {
+            for (Object a : (List<Object>) action) {
+                if ("dynamodb:UpdateItem".equals(a)) return true;
+            }
+        }
+        return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static boolean statementTargetsBundlesTable(Map<String, Object> statement) {
+        Object resource = statement.get("Resource");
+        List<Object> resources =
+                resource instanceof List<?> ? (List<Object>) resource : resource == null ? List.of() : List.of(resource);
+        for (Object r : resources) {
+            if (resourceRefersToBundlesTable(r)) return true;
+        }
+        return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static boolean resourceRefersToBundlesTable(Object resource) {
+        // Bundles table physical name is "{env}-env-bundles" (see SubmitSharedNames.bundlesTableName).
+        // Sister tables use "{env}-env-bundle-capacity" / "{env}-env-bundle-*-async-requests", so
+        // the exact substring "env-bundles" uniquely identifies the bundles table.
+        if (resource instanceof String) {
+            return ((String) resource).contains("env-bundles");
+        }
+        if (resource instanceof List<?>) {
+            for (Object part : (List<Object>) resource) {
+                if (resourceRefersToBundlesTable(part)) return true;
+            }
+            return false;
+        }
+        if (resource instanceof Map) {
+            Map<String, Object> map = (Map<String, Object>) resource;
+            Object ref = map.get("Ref");
+            if (ref instanceof String && ((String) ref).toLowerCase().contains("bundlestable")) return true;
+            Object fnGetAtt = map.get("Fn::GetAtt");
+            if (fnGetAtt instanceof List<?>) {
+                for (Object part : (List<Object>) fnGetAtt) {
+                    if (part instanceof String && ((String) part).toLowerCase().contains("bundlestable")) return true;
+                }
+            }
+            Object fnJoin = map.get("Fn::Join");
+            if (fnJoin instanceof List<?>) {
+                for (Object part : (List<Object>) fnJoin) {
+                    if (resourceRefersToBundlesTable(part)) return true;
+                }
+            }
+            if (map.get("Fn::Sub") instanceof String s && s.contains("env-bundles")) return true;
+            for (Object value : map.values()) {
+                if (value instanceof List<?>) {
+                    for (Object part : (List<Object>) value) {
+                        if (resourceRefersToBundlesTable(part)) return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     private static @NotNull Map<String, Object> buildContextPropertyMapFromCdkJsonPath(Path cdkJsonPath)

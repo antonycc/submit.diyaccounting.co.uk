@@ -110,6 +110,8 @@ on:
     #   | sort @timestamp desc
     #   | filter @message like /REPORT/
     #   | filter @message like /Init Duration/
+    # Scheduled runs execute the matrix in params.normalise
+    # (see behaviour-test-suites-json). Edit that step to add/remove suites.
     - cron: '57 * * * *'
 
 permissions:
@@ -148,7 +150,15 @@ jobs:
         id: normalise
         shell: bash
         run: |
-          X='${{ inputs.behaviour-test-suite }}' ; echo "behaviour-test-suite=${X:-submitVatBehaviour}" | tee -a "$GITHUB_OUTPUT"
+          X='${{ inputs.behaviour-test-suite }}' ; SUITE="${X:-submitVatBehaviour}"
+          echo "behaviour-test-suite=${SUITE}" | tee -a "$GITHUB_OUTPUT"
+          # Scheduled runs execute a matrix of suites; dispatch/call runs the single selected suite.
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            SUITES_JSON='["submitVatBehaviour","tokenRefreshBehaviour"]'
+          else
+            SUITES_JSON=$(printf '["%s"]' "${SUITE}")
+          fi
+          echo "behaviour-test-suites-json=${SUITES_JSON}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.generate-test-reports }}' ; echo "generate-test-reports=${X:-true}" | tee -a "$GITHUB_OUTPUT"
           # Convert '(auto)' to empty string for downstream processing
           ENV_NAME='${{ inputs.environment-name }}'; [[ "$ENV_NAME" == "(auto)" ]] && ENV_NAME=""
@@ -167,6 +177,7 @@ jobs:
           echo 'test-auth-totp-secret=${{ inputs.test-auth-totp-secret }}' | tee -a "$GITHUB_OUTPUT"
     outputs:
       behaviour-test-suite: ${{ steps.normalise.outputs.behaviour-test-suite }}
+      behaviour-test-suites-json: ${{ steps.normalise.outputs.behaviour-test-suites-json }}
       generate-test-reports: ${{ steps.normalise.outputs.generate-test-reports }}
       environment-name: ${{ steps.normalise.outputs.environment-name }}
       deployment-name: ${{ steps.normalise.outputs.deployment-name }}
@@ -247,7 +258,7 @@ jobs:
       public-url: ${{ steps.deployment-config.outputs.public-url }}
 
   behaviour-test:
-    name: 'behaviour test ${{ needs.params.outputs.behaviour-test-suite }}-${{ needs.names.outputs.environment-name }}'
+    name: 'behaviour test ${{ matrix.suite }}-${{ needs.names.outputs.environment-name }}'
     needs:
       - params
       - names
@@ -256,8 +267,12 @@ jobs:
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
     # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
     environment: ${{ needs.params.outputs.github-environment }}
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: ${{ fromJSON(needs.params.outputs.behaviour-test-suites-json) }}
     steps:
-      - name: Running behaviour test - ${{ needs.params.outputs.behaviour-test-suite }}
+      - name: Running behaviour test - ${{ matrix.suite }}
         run: ":"
 
       - name: "Show needs.params.outputs.generate-test-reports=[${{ needs.params.outputs.generate-test-reports }}]"
@@ -345,12 +360,12 @@ jobs:
           sleep "$DELAY"
         shell: bash
 
-      - name: 'Run behaviour test ${{ needs.params.outputs.behaviour-test-suite }}-${{ needs.names.outputs.environment-name }}'
+      - name: 'Run behaviour test ${{ matrix.suite }}-${{ needs.names.outputs.environment-name }}'
         id: behaviour-test
         continue-on-error: true
         if: ${{ !cancelled() }}
         run: |
-          npm run 'test:${{ needs.params.outputs.behaviour-test-suite }}-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
+          npm run 'test:${{ matrix.suite }}-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
           ; RESULT=${exit_code:-0} \
           ; echo "RESULT=$RESULT" | tee -a "$GITHUB_OUTPUT" \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
@@ -365,12 +380,12 @@ jobs:
           TEST_AUTH_PASSWORD: ${{ steps.cognito-test-user.outputs.test-auth-password }}
           TEST_AUTH_TOTP_SECRET: ${{ steps.cognito-test-user.outputs.test-auth-totp-secret }}
 
-      - name: 'Retry behaviour test ${{ needs.params.outputs.behaviour-test-suite }}-${{ needs.names.outputs.environment-name }}'
+      - name: 'Retry behaviour test ${{ matrix.suite }}-${{ needs.names.outputs.environment-name }}'
         id: behaviour-test-retry
         if: ${{ !cancelled() && steps.behaviour-test.outcome == 'failure' }}
         run: |
           echo "Retrying behaviour test after initial failure..."
-          npm run 'test:${{ needs.params.outputs.behaviour-test-suite }}-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
+          npm run 'test:${{ matrix.suite }}-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
           ; RESULT=${exit_code:-0} \
           ; echo "RESULT=$RESULT" | tee -a "$GITHUB_OUTPUT" \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
@@ -440,7 +455,7 @@ jobs:
         run: |
           echo "Generating test report JSON files from behaviour test results..."
           node scripts/generate-test-reports.js \
-            --testName ${{ needs.params.outputs.behaviour-test-suite }} \
+            --testName ${{ matrix.suite }} \
             --envFile '.env.${{ needs.names.outputs.environment-name }}' \
           ;
         shell: bash
@@ -458,7 +473,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ needs.params.outputs.behaviour-test-suite }}-artifacts
+          name: ${{ matrix.suite }}-artifacts
           retention-days: 7
           path: |
             target/behaviour-test-results/
@@ -467,7 +482,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ needs.params.outputs.behaviour-test-suite }}-reports
+          name: ${{ matrix.suite }}-reports
           retention-days: 7
           path: |
             target/test-reports/
@@ -476,13 +491,17 @@ jobs:
 
   publish-cloudwatch-metric:
     if: ${{ !cancelled() }}
-    name: 'publish cloudwatch metric'
+    name: 'publish cloudwatch metric ${{ matrix.suite }}'
     needs:
       - params
       - names
       - behaviour-test
     runs-on: ubuntu-24.04
     environment: ${{ needs.params.outputs.github-environment }}
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: ${{ fromJSON(needs.params.outputs.behaviour-test-suites-json) }}
     steps:
       - name: Configure AWS role via GitHub OIDC
         if: ${{ !cancelled() }}
@@ -509,23 +528,30 @@ jobs:
           retry-max-attempts: 3
 
       - name: publish cloudwatch metric
+        # Matrixed: this step runs once per suite with the same aggregate behaviour-test.result.
+        # Converting GHA job-level result to 0/1: 0 = all suites passed, 1 = any suite failed.
         run: |
+          if [ "${{ needs.behaviour-test.result }}" = "success" ]; then VALUE=0; else VALUE=1; fi
           aws cloudwatch put-metric-data \
             --namespace "${{ needs.names.outputs.apex-domain }}" \
             --metric-name "behaviour-test" \
-            --dimensions deployment-name=${{ needs.names.outputs.deployment-name }},test=${{ needs.params.outputs.behaviour-test-suite }} \
-            --value ${{ needs.behaviour-test.outputs.result }} \
+            --dimensions deployment-name=${{ needs.names.outputs.deployment-name }},test=${{ matrix.suite }} \
+            --value "$VALUE" \
             --region ${{ env.AWS_REGION }}
 
   upload-web-test-results:
     if: ${{ !cancelled() && needs.params.outputs.generate-test-reports == 'true' }}
-    name: 'upload web test results'
+    name: 'upload web test results ${{ matrix.suite }}'
     needs:
       - params
       - names
       - behaviour-test
     runs-on: ubuntu-24.04
     environment: ${{ needs.params.outputs.github-environment }}
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: ${{ fromJSON(needs.params.outputs.behaviour-test-suites-json) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -539,13 +565,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Download artifacts - ${{ needs.params.outputs.behaviour-test-suite }}
+      - name: Download artifacts - ${{ matrix.suite }}
         if: ${{ !cancelled() }}
         uses: actions/download-artifact@v8
         with:
-          name: ${{ needs.params.outputs.behaviour-test-suite }}-artifacts
+          name: ${{ matrix.suite }}-artifacts
           path: |
-            target/behaviour-test-results/${{ needs.params.outputs.behaviour-test-suite }}/
+            target/behaviour-test-results/${{ matrix.suite }}/
 
       - name: List downloaded artefacts
         if: ${{ !cancelled() }}
@@ -554,13 +580,13 @@ jobs:
           echo "Behaviour test results files:"
           find target/behaviour-test-results/ -type f -exec ls -l {} \;
 
-      - name: Download reports - ${{ needs.params.outputs.behaviour-test-suite }}
+      - name: Download reports - ${{ matrix.suite }}
         if: ${{ !cancelled() }}
         uses: actions/download-artifact@v8
         with:
-          name: ${{ needs.params.outputs.behaviour-test-suite }}-reports
+          name: ${{ matrix.suite }}-reports
           path: |
-            target/test-reports/${{ needs.params.outputs.behaviour-test-suite }}/
+            target/test-reports/${{ matrix.suite }}/
 
       - name: List downloaded reports
         if: ${{ !cancelled() }}
@@ -618,7 +644,7 @@ jobs:
         shell: bash
         run: |
           chmod +x ./scripts/publish-web-test-local.sh
-          ./scripts/publish-web-test-local.sh "target/behaviour-test-results/${{ needs.params.outputs.behaviour-test-suite }}/test-report-${{ needs.params.outputs.behaviour-test-suite }}.json" web-test
+          ./scripts/publish-web-test-local.sh "target/behaviour-test-results/${{ matrix.suite }}/test-report-${{ matrix.suite }}.json" web-test
 
           # Copy the following files to S3:
           # web/public/tests/test-report-web-test.json

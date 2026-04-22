@@ -136,6 +136,14 @@ export default defineConfig({
       timeout: 300_000,
     },
     {
+      name: "tokenRefreshBehaviour",
+      testDir: "behaviour-tests",
+      testMatch: ["**/tokenRefresh.behaviour.test.js"],
+      workers: 1,
+      outputDir: "./target/behaviour-test-results/",
+      timeout: 300_000,
+    },
+    {
       name: "paymentBehaviour",
       testDir: "behaviour-tests",
       testMatch: ["**/payment.behaviour.test.js"],
