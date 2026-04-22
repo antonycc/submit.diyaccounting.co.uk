@@ -7,9 +7,9 @@
 // dynamodb:UpdateItem against the bundles table. The CDK IAM grant for this
 // path was missing in the 2026-04 production incident (see REPORT_INCIDENT_BUNDLES.md).
 // This test fails with HTTP 500 from GET /api/v1/bundle if the grant is ever
-// reverted. Intended to run against `-ci` (scheduled) and `-proxy` (local).
-// Skipped against `-prod` because the setup step writes directly to the bundles
-// table.
+// reverted. Sandbox-safe against -ci and -prod: each run allocates and mutates
+// only the freshly minted Cognito test user's own bundle row (unique hashedSub),
+// then clears it at the end of the test.
 
 import { test } from "./helpers/playwrightTestWithout.js";
 import { expect } from "@playwright/test";
@@ -22,8 +22,8 @@ import {
   runLocalOAuth2Server,
   runLocalSslProxy,
 } from "./helpers/behaviour-helpers.js";
-import { consentToDataCollection, goToHomePage } from "./steps/behaviour-steps.js";
-import { loginWithCognitoOrMockAuth, verifyLoggedInStatus } from "./steps/behaviour-login-steps.js";
+import { consentToDataCollection, goToHomePageExpectNotLoggedIn } from "./steps/behaviour-steps.js";
+import { clickLogIn, loginWithCognitoOrMockAuth, verifyLoggedInStatus } from "./steps/behaviour-login-steps.js";
 import { goToBundlesPage, ensureBundlePresent, clearBundles } from "./steps/behaviour-bundle-steps.js";
 import { hashSub, initializeSalt } from "@app/services/subHasher.js";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
@@ -139,9 +139,10 @@ async function fetchBundleApi(page) {
 test("GET /api/v1/bundle refreshes tokens when tokenResetAt has elapsed", async ({ page }) => {
   addOnPageLogging(page);
 
-  await goToHomePage(page, screenshotPath);
+  await goToHomePageExpectNotLoggedIn(page, baseUrl, screenshotPath);
   await consentToDataCollection(page, screenshotPath);
-  await loginWithCognitoOrMockAuth(page, { testAuthProvider, testAuthUsername, testAuthPassword }, screenshotPath);
+  await clickLogIn(page, screenshotPath);
+  await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath, testAuthPassword);
   await verifyLoggedInStatus(page, screenshotPath);
 
   await goToBundlesPage(page, screenshotPath);
@@ -172,4 +173,6 @@ test("GET /api/v1/bundle refreshes tokens when tokenResetAt has elapsed", async 
   expect(refreshed.tokensConsumed, "tokensConsumed should be 0 after lazy refresh").toBe(0);
   expect(Number(refreshed.tokensGranted || 0), "tokensGranted should be > 0 after lazy refresh").toBeGreaterThan(0);
   expect(new Date(refreshed.tokenResetAt).getTime()).toBeGreaterThan(Date.now());
+
+  await clearBundles(page, screenshotPath);
 });
