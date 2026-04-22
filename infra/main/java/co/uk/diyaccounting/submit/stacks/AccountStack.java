@@ -247,7 +247,8 @@ public class AccountStack extends Stack {
                 this.bundleGetLambda.getFunctionName(), userPool.getUserPoolId());
 
         // Grant DynamoDB permissions to both API and Worker Lambdas
-        bundlesTable.grantReadData(this.bundleGetLambda);
+        // bundleGet performs lazy token refresh (UpdateItem) when a bundle's tokenResetAt has elapsed.
+        bundlesTable.grantReadWriteData(this.bundleGetLambda);
         bundleCapacityTable.grantReadData(this.bundleGetLambda);
 
         infof(

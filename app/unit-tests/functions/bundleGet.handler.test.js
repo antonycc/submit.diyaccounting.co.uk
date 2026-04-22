@@ -235,6 +235,59 @@ describe("bundleGet ingestHandler", () => {
   });
 
   // ============================================================================
+  // Lazy Token Refresh Tests (exercises resetTokens → UpdateItem path)
+  // ============================================================================
+  //
+  // Guards the code path whose IAM grant was missing in the 2026-04 production
+  // incident. bundleGet performs an UpdateItem on the bundles table when a user's
+  // tokenResetAt has elapsed. This test asserts an UpdateItem command is issued;
+  // the CDK-side IAM guard lives in SubmitApplicationCdkResourceTest.java.
+
+  test("issues UpdateItem on bundles table when tokenResetAt has elapsed", async () => {
+    const userId = "user-token-refresh";
+    const token = makeIdToken(userId);
+    const event = buildEventWithToken(token, {});
+    event.headers["x-wait-time-ms"] = "500";
+
+    const bundlesTableName = process.env.BUNDLE_DYNAMODB_TABLE_NAME;
+    const pastIso = "1970-01-01T00:00:00.000Z";
+    // invited-guest has tokenRefreshInterval = "P1M" in submit.catalogue.toml, which is the
+    // precondition for bundleGet to issue the resetTokens UpdateItem.
+    const expiredBundle = {
+      hashedSub: "hashed-" + userId,
+      bundleId: "invited-guest",
+      tokensGranted: 3,
+      tokensConsumed: 3,
+      tokenResetAt: pastIso,
+    };
+
+    mockSend.mockImplementation(async (cmd) => {
+      if (cmd instanceof MockQueryCommand && cmd.input.TableName === bundlesTableName) {
+        return { Items: [expiredBundle], Count: 1 };
+      }
+      if (cmd instanceof MockQueryCommand) {
+        return { Items: [], Count: 0 };
+      }
+      if (cmd instanceof MockGetCommand) {
+        return { Item: undefined };
+      }
+      return {};
+    });
+
+    const response = await bundleGetHandler(event);
+
+    expect(response.statusCode).toBe(200);
+
+    const updateCalls = mockSend.mock.calls
+      .map((call) => call[0])
+      .filter((cmd) => cmd instanceof MockUpdateCommand && cmd.input.TableName === bundlesTableName);
+    expect(updateCalls.length).toBeGreaterThanOrEqual(1);
+    const updateCmd = updateCalls[0];
+    expect(updateCmd.input.Key).toHaveProperty("bundleId", "invited-guest");
+    expect(updateCmd.input.UpdateExpression).toMatch(/tokensConsumed\s*=\s*:zero/);
+  });
+
+  // ============================================================================
   // Error Handling Tests (500)
   // ============================================================================
 
