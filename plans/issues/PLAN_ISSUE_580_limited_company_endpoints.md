@@ -1,7 +1,13 @@
-# PLAN: Issue #580 — Implement limited company endpoints
+# PLAN: Issue #580 — Limited company: split tracker
 
 > Source issue: https://github.com/antonycc/submit.diyaccounting.co.uk/issues/580
 > Original body: (empty)
+> **Scope decision 2026-04-22 (Q580.1): split into three discrete issues**, because "limited company" overloads three very different surfaces with different lead times.
+> Proposed children (to be created as new GitHub issues):
+> - **#580a — Companies House reads** (fast, available now). Covered below as the deliverable under the original #580 number; consider closing #580 after splitting and tracking the read work under this plan.
+> - **#580b — Companies House filings** (weeks of accreditation before code). See `plans/issues/PLAN_ISSUE_580b_companies_house_filings.md`.
+> - **#580c — HMRC Corporation Tax MTD** (no production API yet). See `plans/issues/PLAN_ISSUE_580c_corporation_tax_mtd.md`.
+>
 > Existing plans: none specific in `_developers/`. Related: `_developers/backlog/self-employed-api-operations.md` (pattern to follow).
 > External: HMRC's Corporation Tax (CT) MTD is still pre-mandate (as of 2026 knowledge cutoff); Companies House filing is the other strand.
 

@@ -34,10 +34,14 @@ Per `PLAN_MCP_SERVER.md` (summary, likely structure):
 - Lambda `app/functions/mcp/mcpServer.js` — API endpoint running the MCP server inside Lambda behind API Gateway.
 - Alternative: a standalone Fargate container if MCP session affinity matters.
 - New `infra/main/java/.../stacks/McpStack.java` — hosts the MCP endpoint.
-- Auth: since MCP calls originate from an AI assistant on the user's machine, auth is non-trivial. Options:
-  - OAuth device-code flow — user types a short code from Claude Desktop into a browser to grant consent.
-  - Personal API tokens — user generates in `/account/api-tokens` and pastes into Claude Desktop config.
-- New `web/public/account/api-tokens.html` — token generation/revocation UI.
+- Auth: **decided 2026-04-22 — OAuth device-code flow** (Q648.2). User types a short code from Claude Desktop into a browser tab hosted on `submit.diyaccounting.co.uk`, authorises, and the AI assistant polls the token endpoint.
+  - Required endpoints on our side:
+    - `POST /api/v1/mcp/device-code` — issue a `user_code` + `device_code` pair.
+    - `GET /mcp/authorize?user_code=XXXX` — HTML page the user opens to confirm.
+    - `POST /api/v1/mcp/token` — the MCP client polls with the `device_code` until the user authorises; returns a short-lived access token and a long-lived refresh token scoped to the user.
+  - Scopes: `mcp:read`, `mcp:write`, `mcp:submit` (explicit for mutating tools).
+- New `web/public/mcp/authorize.html` — the "Enter your code" + "Authorise [App]" consent page.
+- Personal-API-token scheme is **out of scope for v1**; may be added later for headless/CI consumers.
 - New `web/public/mcp.html` — replace "Coming Soon" with setup instructions, tool catalogue, scopes.
 - Tool implementations — each MCP tool wraps an existing REST call:
   - `list_obligations(vrn)` → existing obligations Lambda
@@ -91,7 +95,7 @@ If the MCP protocol uses long-lived connections (streaming tools), Lambda isn't 
 ## Questions (for QUESTIONS.md)
 
 - Q648.1: MCP host — Lambda (cheap, limits on streaming) or Fargate (more robust, higher baseline cost)?
-- Q648.2: Auth model — OAuth device-code (nicer UX) or personal API token (simpler)? (Recommendation: API token first, OAuth later.)
+- ~~Q648.2: Auth model~~ — **answered 2026-04-22: OAuth device-code flow.** Section above updated.
 - Q648.3: Initial tool set — read-only tools only, or include `submit_return` from day 1 (with the web-confirmation step)?
 - Q648.4: Productise as a standalone package / separate repo? Opens a contribution path.
 
